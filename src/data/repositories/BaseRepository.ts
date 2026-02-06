@@ -67,6 +67,10 @@ export abstract class BaseRepositoryImpl<T extends { id: string; createdAt: Date
     await this.storage.set(this.storageKey, filtered);
   }
 
+  async clear(): Promise<void> {
+    await this.storage.set(this.storageKey, []);
+  }
+
   protected generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }

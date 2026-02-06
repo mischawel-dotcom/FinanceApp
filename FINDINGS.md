@@ -42,15 +42,15 @@
 |---|---|---|
 | F9 | Tests für Forms & UI Components (React Testing Library, IncomeForm) | Fixed |
 | F10 | Seed Data Versionierung (SEED_DATA_VERSION, automatische Migration bei Versionswechsel) | Fixed |
-| F11 | Keine Offline-First Strategie (Service Worker) | Open |
+| F11 | Keine Offline-First Strategie (Service Worker) | Fixed |
 | F12 | GenerateId() nutzt insecure Methode | Fixed |
-| F13 | Zu viele console.error() Logs in Production | Open |
+| F13 | Zu viele console.error() Logs in Production | Open  - nur Frmework Warungen vorhanden.|
 
 ---
 
 ## 🟡 Mittlere Findings (4)
 
-- F14: Store-Zustand nicht persistiert über Reload
+- F14: Store-Zustand nicht persistiert über Reload (Fixed)
 - F15: Performance: Alle Daten laden beim Start
 - F16: Keine Dependency-Injection für Repositories (teilweise gelöst)
 - F17: Fehlende Dokumentation der API/Funktionen
