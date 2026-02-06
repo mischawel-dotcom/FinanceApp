@@ -1,4 +1,6 @@
+
 import { ReactNode } from 'react';
+import { tableBase, tableHead, tableHeaderCell, tableBody, tableRowClickable, tableCell } from './tw';
 
 interface TableProps<T> {
   data: T[];
@@ -27,29 +29,29 @@ export function Table<T extends Record<string, any>>({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className={tableBase}>
+        <thead className={tableHead}>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className={tableHeaderCell}
               >
                 {column.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className={tableBody}>
           {data.map((item, index) => (
             <tr
               key={index}
               onClick={() => onRowClick?.(item)}
-              className={onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}
+              className={onRowClick ? tableRowClickable : ''}
             >
               {columns.map((column) => (
-                <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td key={column.key} className={tableCell}>
                   {column.render ? column.render(item) : item[column.key]}
                 </td>
               ))}

@@ -6,17 +6,20 @@ import type { Recommendation } from '@shared/types';
 type ImpactFilter = 'all' | 'high' | 'medium' | 'low';
 
 export default function RecommendationsPage() {
-  const { recommendations, generateRecommendations, deleteRecommendation, expenses, expenseCategories } = useAppStore();
+  const { recommendations, generateRecommendations, deleteRecommendation, expenses, expenseCategories, loadData } = useAppStore();
   const [impactFilter, setImpactFilter] = useState<ImpactFilter>('all');
   const [isGenerating, setIsGenerating] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Auto-generate recommendations on mount if none exist
   useEffect(() => {
-    if (recommendations.length === 0 && expenses.length > 0) {
-      handleGenerate();
+    if (
+      recommendations.length === 0 ||
+      expenses.length === 0 ||
+      expenseCategories.length === 0
+    ) {
+      loadData();
     }
-  }, []);
+  }, [recommendations.length, expenses.length, expenseCategories.length, loadData]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);

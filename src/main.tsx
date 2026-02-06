@@ -5,15 +5,11 @@ import { useAppStore } from './app/store/useAppStore';
 import './index.css';
 
 function App() {
-  const { initializeSeedData, loadData } = useAppStore();
+  const { initializeSeedData } = useAppStore();
 
   useEffect(() => {
-    const init = async () => {
-      await initializeSeedData();
-      await loadData();
-    };
-    init();
-  }, [initializeSeedData, loadData]);
+    initializeSeedData();
+  }, [initializeSeedData]);
 
   return <AppRouter />;
 }

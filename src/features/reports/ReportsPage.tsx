@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card, Button, Table, Select } from '@shared/components';
 import {
@@ -32,7 +32,19 @@ type MonthlySeries = {
 };
 
 export default function ReportsPage() {
-  const { incomes, expenses, incomeCategories, expenseCategories } = useAppStore();
+  const { incomes, expenses, incomeCategories, expenseCategories, loadData } = useAppStore();
+
+  useEffect(() => {
+    if (
+      incomes.length === 0 ||
+      expenses.length === 0 ||
+      incomeCategories.length === 0 ||
+      expenseCategories.length === 0
+    ) {
+      loadData();
+    }
+  }, [incomes.length, expenses.length, incomeCategories.length, expenseCategories.length, loadData]);
+
   const [selectedMonthKey, setSelectedMonthKey] = useState(
     format(new Date(), 'yyyy-MM')
   );

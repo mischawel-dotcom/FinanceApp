@@ -10,8 +10,37 @@ import {
   seedGoals
 } from '../../data/seedData';
 
-// TODO: Importiere die Typen für die State-Objekte aus shared/types/index.ts
-// import { IncomeCategory, ExpenseCategory, Income, Expense, Asset, FinancialGoal, Recommendation } from '../../shared/types';
+
+// Typen für bessere Lesbarkeit (optional)
+import type { Income, Expense, Asset, FinancialGoal } from '../../shared/types';
+
+// Hilfsfunktion: Date-Felder rehydrieren
+function rehydrateDates(state: any) {
+  if (!state) return state;
+  const fixDate = (obj: any, keys: string[]) => {
+    keys.forEach((key) => {
+      if (obj[key] && typeof obj[key] === 'string') {
+        obj[key] = new Date(obj[key]);
+      }
+    });
+    return obj;
+  };
+  return {
+    ...state,
+    incomes: Array.isArray(state.incomes)
+      ? state.incomes.map((i: any) => fixDate(i, ['date', 'createdAt', 'updatedAt']))
+      : [],
+    expenses: Array.isArray(state.expenses)
+      ? state.expenses.map((e: any) => fixDate(e, ['date', 'createdAt', 'updatedAt']))
+      : [],
+    assets: Array.isArray(state.assets)
+      ? state.assets.map((a: any) => fixDate(a, ['purchaseDate', 'createdAt', 'updatedAt']))
+      : [],
+    goals: Array.isArray(state.goals)
+      ? state.goals.map((g: any) => fixDate(g, ['createdAt', 'updatedAt']))
+      : [],
+  };
+}
 
 interface AppStore {
   incomeCategories: any[];
@@ -118,7 +147,14 @@ export const useAppStore = create<AppStore>()(
         assets: state.assets,
         goals: state.goals,
         recommendations: state.recommendations
-      })
+      }),
+      // Nach dem Laden aus dem Storage: Date-Felder rehydrieren
+      onRehydrateStorage: () => (state, error) => {
+        if (state) {
+          const hydrated = rehydrateDates(state);
+          Object.assign(state, hydrated);
+        }
+      },
     }
   )
 );

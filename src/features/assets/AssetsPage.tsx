@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Asset } from '@shared/types';
@@ -6,8 +6,14 @@ import { Button, Card, Modal, Table } from '@shared/components';
 import { AssetForm } from './AssetForm';
 
 export default function AssetsPage() {
-  const { assets, createAsset, updateAsset, deleteAsset } = useAppStore();
+  const { assets, createAsset, updateAsset, deleteAsset, loadData } = useAppStore();
   
+  useEffect(() => {
+    if (assets.length === 0) {
+      loadData();
+    }
+  }, [assets.length, loadData]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 

@@ -5,3 +5,5 @@ export * from './Textarea';
 export * from './Modal';
 export * from './Table';
 export * from './Card';
+
+export * from './tw';

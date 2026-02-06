@@ -1,9 +1,23 @@
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { incomes, expenses, assets, goals, incomeCategories, expenseCategories } = useAppStore();
+  const { incomes, expenses, assets, goals, incomeCategories, expenseCategories, loadData } = useAppStore();
+
+  useEffect(() => {
+    if (
+      incomes.length === 0 ||
+      expenses.length === 0 ||
+      assets.length === 0 ||
+      goals.length === 0 ||
+      incomeCategories.length === 0 ||
+      expenseCategories.length === 0
+    ) {
+      loadData();
+    }
+  }, [incomes.length, expenses.length, assets.length, goals.length, incomeCategories.length, expenseCategories.length, loadData]);
 
   // Calculate current month data
   const now = new Date();

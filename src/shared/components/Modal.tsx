@@ -1,5 +1,7 @@
+
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { modalBase, modalHeader, modalTitle, modalClose, modalBody, modalFooter } from './tw';
 
 interface ModalProps {
   isOpen: boolean;
@@ -13,11 +15,35 @@ interface ModalProps {
 export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       closeButtonRef.current?.focus();
+      // Focus trap
+      const trapFocus = (e: KeyboardEvent) => {
+        if (e.key === 'Tab' && modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (!focusable.length) return;
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      window.addEventListener('keydown', trapFocus);
+      return () => {
+        window.removeEventListener('keydown', trapFocus);
+        document.body.style.overflow = 'unset';
+      };
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -57,19 +83,20 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
+          ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`relative bg-white rounded-lg shadow-xl w-full ${sizes[size]} max-h-[90vh] flex flex-col`}
+          className={[modalBase, sizes[size]].join(' ')}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h2 id={titleId} className="text-xl font-semibold text-gray-900">{title}</h2>
+          <div className={modalHeader}>
+            <h2 id={titleId} className={modalTitle}>{title}</h2>
             <button
               ref={closeButtonRef}
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className={modalClose}
               aria-label="Close"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,11 +106,11 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
           </div>
 
           {/* Body */}
-          <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
+          <div className={modalBody}>{children}</div>
 
           {/* Footer */}
           {footer && (
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className={modalFooter}>
               {footer}
             </div>
           )}

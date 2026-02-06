@@ -51,7 +51,7 @@
 ## 🟡 Mittlere Findings (4)
 
 - F14: Store-Zustand nicht persistiert über Reload (jetzt persistiert, Seed-Init fix, Branch: feature/offline-service-worker, Release: v0.2.0) - Fixed
-- F15: Performance: Alle Daten laden beim Start
+- F15: Performance: Alle Daten laden beim Start (Lazy Loading pro Feature, Date-Rehydration für Persistenz, Testabdeckung, Branch: last-findings, Release: v0.2.1) - Fixed
 - F16: Keine Dependency-Injection für Repositories (teilweise gelöst)
 - F17: Fehlende Dokumentation der API/Funktionen
 
@@ -59,9 +59,9 @@
 
 ## 🔵 Niedrige Findings (3)
 
-- F18: TailwindCSS Utility-Klassen nicht DRY
+- F18: TailwindCSS Utility-Klassen nicht DRY (zentralisiert in src/shared/components/tw.ts, alle Shared Components refactored) - Fixed
 - F19: Keine .env.example Datei (Fixed)
-- F20: Fehlende Keyboard-Navigation in Modalen
+- F20: Fehlende Keyboard-Navigation in Modalen (Tab/Shift+Tab-Fokus-Trap, Escape schließt Modal, Accessibility verbessert) - Fixed
 
 ---
 

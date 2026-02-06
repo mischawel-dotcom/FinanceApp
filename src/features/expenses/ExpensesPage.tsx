@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Expense, ExpenseCategory } from '@shared/types';
@@ -16,8 +16,15 @@ export default function ExpensesPage() {
     createExpense,
     updateExpense,
     deleteExpense,
+    loadData
   } = useAppStore();
-  
+
+  useEffect(() => {
+    if (expenseCategories.length === 0 || expenses.length === 0) {
+      loadData();
+    }
+  }, [expenseCategories.length, expenses.length, loadData]);
+
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);

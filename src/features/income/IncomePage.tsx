@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Income, IncomeCategory } from '@shared/types';
@@ -16,8 +16,15 @@ export default function IncomePage() {
     createIncome,
     updateIncome,
     deleteIncome,
+    loadData
   } = useAppStore();
-  
+
+  useEffect(() => {
+    if (incomeCategories.length === 0 || incomes.length === 0) {
+      loadData();
+    }
+  }, [incomeCategories.length, incomes.length, loadData]);
+
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<IncomeCategory | null>(null);

@@ -1,4 +1,6 @@
+
 import { InputHTMLAttributes, forwardRef, useId } from 'react';
+import { inputBase, inputError, inputDefault, labelBase, errorText, helperText } from './tw';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -16,7 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={inputId} className={labelBase}>
             {label}
             {props.required && <span className="text-danger-500 ml-1">*</span>}
           </label>
@@ -26,20 +28,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className={`
-            w-full px-3 py-2 border rounded-md shadow-sm
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            ${error ? 'border-danger-500' : 'border-gray-300'}
-            ${className}
-          `}
+          className={[
+            inputBase,
+            error ? inputError : inputDefault,
+            className
+          ].join(' ')}
           {...props}
         />
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-danger-500">{error}</p>
+          <p id={errorId} className={errorText}>{error}</p>
         )}
         {helperText && !error && (
-          <p id={helperId} className="mt-1 text-sm text-gray-500">{helperText}</p>
+          <p id={helperId} className={helperText}>{helperText}</p>
         )}
       </div>
     );

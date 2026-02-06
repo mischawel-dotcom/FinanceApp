@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { FinancialGoal, GoalPriority } from '@shared/types';
@@ -6,8 +6,14 @@ import { Button, Card, Modal } from '@shared/components';
 import { GoalForm } from './GoalForm';
 
 export default function GoalsPage() {
-  const { goals, createGoal, updateGoal, deleteGoal } = useAppStore();
+  const { goals, createGoal, updateGoal, deleteGoal, loadData } = useAppStore();
   
+  useEffect(() => {
+    if (goals.length === 0) {
+      loadData();
+    }
+  }, [goals.length, loadData]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
 
