@@ -42,15 +42,15 @@
 |---|---|---|
 | F9 | Tests für Forms & UI Components (React Testing Library, IncomeForm) | Fixed |
 | F10 | Seed Data Versionierung (SEED_DATA_VERSION, automatische Migration bei Versionswechsel) | Fixed |
-| F11 | Keine Offline-First Strategie (Service Worker) | Fixed |
+| F11 | Offline-First Strategie (Service Worker, Branch: feature/offline-service-worker, Release: v0.2.0) | Fixed |
 | F12 | GenerateId() nutzt insecure Methode | Fixed |
-| F13 | Zu viele console.error() Logs in Production | Open  - nur Frmework Warungen vorhanden.|
+| F13 | Zu viele console.error() Logs in Production | Open  - nur Frmework Warungen|
 
 ---
 
 ## 🟡 Mittlere Findings (4)
 
-- F14: Store-Zustand nicht persistiert über Reload (Fixed)
+- F14: Store-Zustand nicht persistiert über Reload (jetzt persistiert, Seed-Init fix, Branch: feature/offline-service-worker, Release: v0.2.0) - Fixed
 - F15: Performance: Alle Daten laden beim Start
 - F16: Keine Dependency-Injection für Repositories (teilweise gelöst)
 - F17: Fehlende Dokumentation der API/Funktionen
@@ -73,6 +73,8 @@
 - **F4:** AES-Verschlüsselung für localStorage (crypto-js) implementiert. Hinweis: Nach Umstellung müssen alte Daten im localStorage gelöscht werden, da sie nicht entschlüsselt werden können.
 - **F9:** UI-Tests für IncomeForm mit React Testing Library implementiert (Validierung, Submit, Cancel). Weitere Form-Komponenten können analog getestet werden.
 - **F10:** Seed Data Versionierung eingeführt (Konstante SEED_DATA_VERSION in seedData.ts, automatische Neuinitialisierung bei Versionswechsel in initializeSeedData). Migration: Bei Änderung der Version werden Seed-Daten und Kategorien neu angelegt.
+- **F11:** Service Worker & Offline-First Strategie im Branch feature/offline-service-worker umgesetzt, Release 1.4.
+- **F14:** Store-Zustand persistiert jetzt über Reload, Seed-Daten werden korrekt geladen (initializeSeedData), Branch feature/offline-service-worker, Release 1.4.
 
 ---
 
