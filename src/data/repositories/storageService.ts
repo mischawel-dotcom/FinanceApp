@@ -3,14 +3,24 @@
  * Konkrete Implementierung für localStorage
  */
 
+
 import type { StorageService } from './interfaces';
+import AES from 'crypto-js/aes';
+import Utf8 from 'crypto-js/enc-utf8';
+
+// TODO: Für MVP statischer Key, später aus .env oder User-Passwort ableiten
+const ENCRYPTION_KEY = 'finance-app-demo-key-2026';
 
 class LocalStorageService implements StorageService {
   async get<T>(key: string): Promise<T | null> {
     try {
-      const item = localStorage.getItem(key);
-      if (!item) return null;
-      return JSON.parse(item, this.dateReviver) as T;
+      const encrypted = localStorage.getItem(key);
+      if (!encrypted) return null;
+      // Entschlüsseln
+      const bytes = AES.decrypt(encrypted, ENCRYPTION_KEY);
+      const decrypted = bytes.toString(Utf8);
+      if (!decrypted) return null;
+      return JSON.parse(decrypted, this.dateReviver) as T;
     } catch (error) {
       console.error(`Error reading from localStorage (${key}):`, error);
       return null;
@@ -19,7 +29,10 @@ class LocalStorageService implements StorageService {
 
   async set<T>(key: string, value: T): Promise<void> {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      // Serialisieren und verschlüsseln
+      const plain = JSON.stringify(value);
+      const encrypted = AES.encrypt(plain, ENCRYPTION_KEY).toString();
+      localStorage.setItem(key, encrypted);
     } catch (error: any) {
       if (error && error.name === 'QuotaExceededError') {
         console.error(`localStorage Quota überschritten (${key})`);

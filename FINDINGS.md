@@ -28,7 +28,7 @@
 | F1 | Fehlende Input-Validierung & Numeric Boundary Checks | Fixed |
 | F2 | Keine Überprüfung auf Kategorie-Existenz vor Create/Delete | Fixed |
 | F3 | Unzureichendes Error-Handling & fehlende User Feedback | Fixed |
-| F4 | Kein Data Encryption für localStorage (Sensible Finanzdaten) | Open |
+| F4 | Data Encryption für localStorage (AES, crypto-js, MVP: statischer Key; Migration: alte Daten löschen) | Fixed |
 | F5 | Keine Authentifizierung/Autorisierung | Open |
 | F6 | Date-Parsing vulnerable für Zeitzone-Fehler | Fixed |
 | F7 | Race Condition in initializeSeedData | Fixed |
@@ -40,8 +40,8 @@
 
 | ID | Titel | Status |
 |---|---|---|
-| F9 | Keine Tests für Forms & UI Components | Open |
-| F10 | Keine Versionierung der Seed Data | Open |
+| F9 | Tests für Forms & UI Components (React Testing Library, IncomeForm) | Fixed |
+| F10 | Seed Data Versionierung (SEED_DATA_VERSION, automatische Migration bei Versionswechsel) | Fixed |
 | F11 | Keine Offline-First Strategie (Service Worker) | Open |
 | F12 | GenerateId() nutzt insecure Methode | Fixed |
 | F13 | Zu viele console.error() Logs in Production | Open |
@@ -70,6 +70,9 @@
 - **F1:** Input-Validierung mit Zod für alle Forms umgesetzt
 - **F2:** Kategorie-Referenzprüfung bei Income/Expense-Formularen
 - **F3:** Error-Handling & User-Feedback für Forms
+- **F4:** AES-Verschlüsselung für localStorage (crypto-js) implementiert. Hinweis: Nach Umstellung müssen alte Daten im localStorage gelöscht werden, da sie nicht entschlüsselt werden können.
+- **F9:** UI-Tests für IncomeForm mit React Testing Library implementiert (Validierung, Submit, Cancel). Weitere Form-Komponenten können analog getestet werden.
+- **F10:** Seed Data Versionierung eingeführt (Konstante SEED_DATA_VERSION in seedData.ts, automatische Neuinitialisierung bei Versionswechsel in initializeSeedData). Migration: Bei Änderung der Version werden Seed-Daten und Kategorien neu angelegt.
 
 ---
 

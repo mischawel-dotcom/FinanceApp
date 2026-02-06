@@ -1,7 +1,11 @@
+
 /**
  * SEED DATA
  * Demo-Daten für den ersten Start der App
+ * Versionierung für Migrationen und Updates
  */
+
+export const SEED_DATA_VERSION = 1;
 
 import type {
   IncomeCategory,

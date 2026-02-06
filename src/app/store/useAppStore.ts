@@ -31,6 +31,7 @@ import {
   seedExpenses,
   seedAssets,
   seedGoals,
+  SEED_DATA_VERSION,
 } from '@data/seedData';
 
 interface AppStore extends AppState {
@@ -74,6 +75,7 @@ interface AppStore extends AppState {
 }
 
 const INIT_FLAG_KEY = 'finance-app:initialized';
+const SEED_VERSION_KEY = 'finance-app:seed-version';
 
 export const useAppStore = create<AppStore>((set) => ({
   // Initial State
@@ -125,15 +127,24 @@ export const useAppStore = create<AppStore>((set) => ({
   // Initialize seed data on first launch
   initializeSeedData: async () => {
     const isInitialized = localStorage.getItem(INIT_FLAG_KEY);
-    if (isInitialized === 'true' || isInitialized === 'pending') {
-      // Daten bereits vorhanden oder Initialisierung läuft, nur laden
+    const storedSeedVersion = Number(localStorage.getItem(SEED_VERSION_KEY));
+    // Wenn Seed-Daten noch nicht initialisiert oder Version veraltet, neu initialisieren
+    if ((isInitialized === 'true' || isInitialized === 'pending') && storedSeedVersion === SEED_DATA_VERSION) {
+      // Daten bereits vorhanden und Version aktuell
       return;
     }
     // Setze Flag sofort auf 'pending', um parallele Initialisierungen zu verhindern
     localStorage.setItem(INIT_FLAG_KEY, 'pending');
-    console.log('Initializing seed data...');
     set({ isLoading: true });
     try {
+      // Optional: Vorherige Seed-Daten löschen (Migration)
+      await incomeCategoryRepository.clear();
+      await expenseCategoryRepository.clear();
+      await incomeRepository.clear();
+      await expenseRepository.clear();
+      await assetRepository.clear();
+      await goalRepository.clear();
+
       // 1. Kategorien erstellen
       const createdIncomeCategories = await Promise.all(
         seedIncomeCategories.map((cat) => incomeCategoryRepository.create(cat))
@@ -175,9 +186,11 @@ export const useAppStore = create<AppStore>((set) => ({
 
       // Initialisierung abgeschlossen
       localStorage.setItem(INIT_FLAG_KEY, 'true');
+      localStorage.setItem(SEED_VERSION_KEY, String(SEED_DATA_VERSION));
       console.log('Seed data initialized successfully!');
     } catch (error) {
       localStorage.removeItem(INIT_FLAG_KEY); // Bei Fehler Flag zurücksetzen
+      localStorage.removeItem(SEED_VERSION_KEY);
       console.error('Error initializing seed data:', error);
       set({ error: 'Fehler beim Initialisieren der Demo-Daten' });
     } finally {
