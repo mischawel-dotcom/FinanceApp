@@ -1,6 +1,6 @@
 
 import { InputHTMLAttributes, forwardRef, useId } from 'react';
-import { inputBase, inputError, inputDefault, labelBase, errorText, helperText } from './tw';
+import { inputBase, inputError, inputDefault, labelBase, errorText } from './tw';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

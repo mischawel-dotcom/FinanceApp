@@ -12,7 +12,7 @@ import {
 
 
 // Typen für bessere Lesbarkeit (optional)
-import type { Income, Expense, Asset, FinancialGoal } from '../../shared/types';
+
 
 // Hilfsfunktion: Date-Felder rehydrieren
 function rehydrateDates(state: any) {
@@ -149,7 +149,7 @@ export const useAppStore = create<AppStore>()(
         recommendations: state.recommendations
       }),
       // Nach dem Laden aus dem Storage: Date-Felder rehydrieren
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: () => (state) => {
         if (state) {
           const hydrated = rehydrateDates(state);
           Object.assign(state, hydrated);

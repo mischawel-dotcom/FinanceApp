@@ -17,22 +17,22 @@ export default function GoalsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
 
-  const handleCreate = async (data: Omit<FinancialGoal, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createGoal(data);
+  const handleCreate = async () => {
+    await createGoal();
     setIsModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<FinancialGoal, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdate = async () => {
     if (editingGoal) {
-      await updateGoal(editingGoal.id, data);
+      await updateGoal();
       setEditingGoal(null);
       setIsModalOpen(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     if (confirm('Ziel wirklich löschen?')) {
-      await deleteGoal(id);
+      await deleteGoal();
     }
   };
 
@@ -68,8 +68,8 @@ export default function GoalsPage() {
 
   const sortedGoals = [...goals].sort((a, b) => {
     // Sort by priority first
-    const priorityOrder: Record<GoalPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+    const priorityOrder: Record<import('@shared/types').GoalPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+    return priorityOrder[a.priority as import('@shared/types').GoalPriority] - priorityOrder[b.priority as import('@shared/types').GoalPriority];
   });
 
   return (
@@ -161,7 +161,7 @@ export default function GoalsPage() {
                   <Button size="sm" variant="secondary" onClick={() => openEditModal(goal)} className="flex-1">
                     Bearbeiten
                   </Button>
-                  <Button size="sm" variant="danger" onClick={() => handleDelete(goal.id)} className="flex-1">
+                  <Button size="sm" variant="danger" onClick={handleDelete} className="flex-1">
                     Löschen
                   </Button>
                 </div>

@@ -17,22 +17,22 @@ export default function AssetsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
-  const handleCreate = async (data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createAsset(data);
+  const handleCreate = async () => {
+    await createAsset();
     setIsModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdate = async () => {
     if (editingAsset) {
-      await updateAsset(editingAsset.id, data);
+      await updateAsset();
       setEditingAsset(null);
       setIsModalOpen(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     if (confirm('Anlage wirklich löschen?')) {
-      await deleteAsset(id);
+      await deleteAsset();
     }
   };
 
@@ -111,7 +111,7 @@ export default function AssetsPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditModal(asset)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDelete(asset.id)}>
+          <Button size="sm" variant="danger" onClick={handleDelete}>
             Löschen
           </Button>
         </div>

@@ -43,22 +43,24 @@ class IncomeRepositoryImpl extends BaseRepositoryImpl<Income> implements IncomeR
 
   async filter(filter: IncomeFilter): Promise<Income[]> {
     let items = await this.getAll();
-
-    if (filter.categoryIds && filter.categoryIds.length > 0) {
-      items = items.filter((item) => filter.categoryIds!.includes(item.categoryId));
+    if (filter.categoryId) {
+      items = items.filter((item) => item.categoryId === filter.categoryId);
     }
-
-    if (filter.dateRange) {
-      items = items.filter(
-        (item) =>
-          item.date >= filter.dateRange!.start && item.date <= filter.dateRange!.end
-      );
+    if (filter.minAmount !== undefined) {
+      items = items.filter((item) => item.amount >= filter.minAmount!);
     }
-
+    if (filter.maxAmount !== undefined) {
+      items = items.filter((item) => item.amount <= filter.maxAmount!);
+    }
+    if (filter.startDate) {
+      items = items.filter((item) => item.date >= filter.startDate!);
+    }
+    if (filter.endDate) {
+      items = items.filter((item) => item.date <= filter.endDate!);
+    }
     if (filter.isRecurring !== undefined) {
       items = items.filter((item) => item.isRecurring === filter.isRecurring);
     }
-
     return items;
   }
 }
@@ -96,30 +98,24 @@ class ExpenseRepositoryImpl extends BaseRepositoryImpl<Expense> implements Expen
 
   async filter(filter: ExpenseFilter): Promise<Expense[]> {
     let items = await this.getAll();
-
-    if (filter.categoryIds && filter.categoryIds.length > 0) {
-      items = items.filter((item) => filter.categoryIds!.includes(item.categoryId));
+    if (filter.categoryId) {
+      items = items.filter((item) => item.categoryId === filter.categoryId);
     }
-
-    if (filter.importanceLevels && filter.importanceLevels.length > 0) {
-      items = items.filter((item) => filter.importanceLevels!.includes(item.importance));
-    }
-
-    if (filter.dateRange) {
-      items = items.filter(
-        (item) =>
-          item.date >= filter.dateRange!.start && item.date <= filter.dateRange!.end
-      );
-    }
-
     if (filter.minAmount !== undefined) {
       items = items.filter((item) => item.amount >= filter.minAmount!);
     }
-
     if (filter.maxAmount !== undefined) {
       items = items.filter((item) => item.amount <= filter.maxAmount!);
     }
-
+    if (filter.startDate) {
+      items = items.filter((item) => item.date >= filter.startDate!);
+    }
+    if (filter.endDate) {
+      items = items.filter((item) => item.date <= filter.endDate!);
+    }
+    if (filter.importance !== undefined) {
+      items = items.filter((item) => item.importance === filter.importance);
+    }
     return items;
   }
 }

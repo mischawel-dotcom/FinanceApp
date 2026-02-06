@@ -32,22 +32,22 @@ export default function ExpensesPage() {
   const [activeTab, setActiveTab] = useState<'entries' | 'categories'>('entries');
 
   // Category Handlers
-  const handleCreateCategory = async (data: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createExpenseCategory(data);
+  const handleCreateCategory = async () => {
+    await createExpenseCategory();
     setIsCategoryModalOpen(false);
   };
 
-  const handleUpdateCategory = async (data: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateCategory = async () => {
     if (editingCategory) {
-      await updateExpenseCategory(editingCategory.id, data);
+      await updateExpenseCategory();
       setEditingCategory(null);
       setIsCategoryModalOpen(false);
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
+  const handleDeleteCategory = async () => {
     if (confirm('Kategorie wirklich löschen?')) {
-      await deleteExpenseCategory(id);
+      await deleteExpenseCategory();
     }
   };
 
@@ -62,22 +62,22 @@ export default function ExpensesPage() {
   };
 
   // Expense Handlers
-  const handleCreateExpense = async (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createExpense(data);
+  const handleCreateExpense = async () => {
+    await createExpense();
     setIsExpenseModalOpen(false);
   };
 
-  const handleUpdateExpense = async (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateExpense = async () => {
     if (editingExpense) {
-      await updateExpense(editingExpense.id, data);
+      await updateExpense();
       setEditingExpense(null);
       setIsExpenseModalOpen(false);
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
+  const handleDeleteExpense = async () => {
     if (confirm('Ausgabe wirklich löschen?')) {
-      await deleteExpense(id);
+      await deleteExpense();
     }
   };
 
@@ -126,7 +126,7 @@ export default function ExpensesPage() {
       key: 'importance',
       label: 'Wichtigkeit',
       render: (cat: ExpenseCategory) => (
-        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getImportanceBadge(cat.importance)}`}>
+        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
           {cat.importance}
         </span>
       ),
@@ -139,7 +139,7 @@ export default function ExpensesPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditCategoryModal(cat)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>
+          <Button size="sm" variant="danger" onClick={handleDeleteCategory}>
             Löschen
           </Button>
         </div>
@@ -177,7 +177,7 @@ export default function ExpensesPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditExpenseModal(exp)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(exp.id)}>
+          <Button size="sm" variant="danger" onClick={handleDeleteExpense}>
             Löschen
           </Button>
         </div>
@@ -233,9 +233,6 @@ export default function ExpensesPage() {
       {/* Entries Tab */}
       {activeTab === 'entries' && (
         <Card 
-          role="tabpanel"
-          id="expense-panel-entries"
-          aria-labelledby="expense-tab-entries"
           title="Ausgaben" 
           actions={
             <Button onClick={openCreateExpenseModal}>
@@ -254,9 +251,6 @@ export default function ExpensesPage() {
       {/* Categories Tab */}
       {activeTab === 'categories' && (
         <Card
-          role="tabpanel"
-          id="expense-panel-categories"
-          aria-labelledby="expense-tab-categories"
           title="Ausgaben-Kategorien"
           actions={
             <Button onClick={openCreateCategoryModal}>

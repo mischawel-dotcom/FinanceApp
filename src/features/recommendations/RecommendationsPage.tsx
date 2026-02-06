@@ -1,6 +1,7 @@
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button, Card } from '@shared/components';
 import { useState, useEffect } from 'react';
+
 import type { Recommendation } from '@shared/types';
 
 type ImpactFilter = 'all' | 'high' | 'medium' | 'low';
@@ -60,7 +61,7 @@ export default function RecommendationsPage() {
   };
 
   const getTypeLabel = (type: Recommendation['type']) => {
-    switch (type) {
+    switch (type as string) {
       case 'eliminate-expense':
         return '🚫 Eliminieren';
       case 'reduce-expense':
@@ -230,7 +231,7 @@ export default function RecommendationsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteRecommendation(rec.id)}
+                    onClick={() => deleteRecommendation()}
                   >
                     Erledigt / Ignorieren
                   </Button>

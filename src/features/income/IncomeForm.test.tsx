@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { IncomeForm } from '@/features/income/IncomeForm';
@@ -6,8 +7,8 @@ import { IncomeForm } from '@/features/income/IncomeForm';
 const mockOnSubmit = vi.fn();
 const mockOnCancel = vi.fn();
 const mockCategories = [
-  { id: 'default', name: 'Gehalt' },
-  { id: 'other', name: 'Sonstiges' },
+  { id: 'default', name: 'Gehalt', createdAt: new Date(), updatedAt: new Date() },
+  { id: 'other', name: 'Sonstiges', createdAt: new Date(), updatedAt: new Date() },
 ];
 
 describe('IncomeForm UI', () => {

@@ -1,6 +1,6 @@
 
 import { TextareaHTMLAttributes, forwardRef, useId } from 'react';
-import { inputBase, inputError, inputDefault, labelBase, errorText, helperText } from './tw';
+import { inputBase, inputError, inputDefault, labelBase, errorText } from './tw';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;

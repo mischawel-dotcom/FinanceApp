@@ -6,10 +6,9 @@
 import type { 
   Expense, 
   ExpenseCategory, 
-  Recommendation, 
-  RecommendationType 
+  Recommendation
 } from '@shared/types';
-import { format, subMonths } from 'date-fns';
+import { subMonths } from 'date-fns';
 
 interface ExpenseAnalysis {
   categoryId: string;
@@ -70,7 +69,7 @@ export class RecommendationService {
         categoryMap.set(category.id, {
           categoryId: category.id,
           categoryName: category.name,
-          importance: category.importance,
+          importance: category.importance ?? 3,
           totalAmount: 0,
           expenseCount: 0,
           averageAmount: 0,
@@ -112,7 +111,7 @@ export class RecommendationService {
         description: `Diese Kategorie hat niedrige Wichtigkeit (${analysis.importance}/6), verursacht aber hohe Kosten von ${monthlyCost.toFixed(2)}€ pro Monat.`,
         potentialSavings,
         impact: potentialSavings > 1000 ? 'high' : 'medium',
-        relatedExpenses: [],
+        // relatedExpenses: [],
         explanation: `Berechnung: Durchschnitt der letzten 3 Monate (${analysis.totalAmount.toFixed(2)}€) × 80% Reduktionspotenzial = ${potentialSavings.toFixed(2)}€ Ersparnis. Wichtigkeit ${analysis.importance}/6 deutet darauf hin, dass diese Ausgaben verzichtbar sind.`,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -144,7 +143,7 @@ export class RecommendationService {
         description: `Bei mittlerer Wichtigkeit (${analysis.importance}/6) sind die Kosten von ${monthlyCost.toFixed(2)}€/Monat sehr hoch. Prüfe günstigere Alternativen.`,
         potentialSavings,
         impact: potentialSavings > 800 ? 'high' : potentialSavings > 300 ? 'medium' : 'low',
-        relatedExpenses: [],
+        // relatedExpenses: [],
         explanation: `Berechnung: Aktuelle Kosten ${analysis.totalAmount.toFixed(2)}€ (3 Monate) × 30% Optimierungspotenzial = ${potentialSavings.toFixed(2)}€. Bei mittlerer Wichtigkeit gibt es oft günstigere Alternativen ohne Qualitätsverlust.`,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -166,7 +165,7 @@ export class RecommendationService {
 
     const expensiveInLowImportance = expenses.filter((exp) => {
       const category = categories.find((c) => c.id === exp.categoryId);
-      return category && category.importance <= 2 && exp.amount > 150;
+      return category && (category.importance ?? 3) <= 2 && exp.amount > 150;
     });
 
     if (expensiveInLowImportance.length === 0) return recommendations;
@@ -183,17 +182,17 @@ export class RecommendationService {
     grouped.forEach((exps, categoryId) => {
       const category = categories.find((c) => c.id === categoryId)!;
       const totalAmount = exps.reduce((sum, e) => sum + e.amount, 0);
-      const expenseIds = exps.map((e) => e.id);
+      // const expenseIds = exps.map((e) => e.id);
 
       recommendations.push({
         id: this.generateId(),
         type: 'eliminate-expense',
         title: `Teure Einzelausgaben in "${category.name}" vermeiden`,
-        description: `${exps.length} teure Ausgabe(n) (insgesamt ${totalAmount.toFixed(2)}€) in einer Kategorie mit niedriger Wichtigkeit (${category.importance}/6).`,
+        description: `${exps.length} teure Ausgabe(n) (insgesamt ${totalAmount.toFixed(2)}€) in einer Kategorie mit niedriger Wichtigkeit (${(category.importance ?? 3)}/6).`,
         potentialSavings: totalAmount * 0.9,
         impact: totalAmount > 500 ? 'high' : totalAmount > 200 ? 'medium' : 'low',
-        relatedExpenses: expenseIds,
-        explanation: `Berechnung: Summe der Einzelausgaben über 150€ = ${totalAmount.toFixed(2)}€. Bei Wichtigkeit ${category.importance}/6 sind diese Ausgaben vermeidbar. Potenzielle Ersparnis: ${(totalAmount * 0.9).toFixed(2)}€.`,
+        // relatedExpenses: expenseIds,
+        explanation: `Berechnung: Summe der Einzelausgaben über 150€ = ${totalAmount.toFixed(2)}€. Bei Wichtigkeit ${(category.importance ?? 3)}/6 sind diese Ausgaben vermeidbar. Potenzielle Ersparnis: ${(totalAmount * 0.9).toFixed(2)}€.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -229,7 +228,7 @@ export class RecommendationService {
         description: `Durchschnittlich ${monthlyCount.toFixed(0)} Ausgaben pro Monat (je ${analysis.averageAmount.toFixed(2)}€) summieren sich zu ${monthlyCost.toFixed(2)}€/Monat.`,
         potentialSavings,
         impact: potentialSavings > 500 ? 'medium' : 'low',
-        relatedExpenses: [],
+        // relatedExpenses: [],
         explanation: `Berechnung: ${analysis.expenseCount} Ausgaben × ${analysis.averageAmount.toFixed(2)}€ = ${analysis.totalAmount.toFixed(2)}€ (3 Monate). Bei bewussterem Konsum sind 50% Einsparung realistisch = ${potentialSavings.toFixed(2)}€.`,
         createdAt: new Date(),
         updatedAt: new Date(),

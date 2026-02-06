@@ -79,8 +79,8 @@ export default function DashboardPage() {
   // Top 3 Goals by priority
   const priorityGoals = [...goals]
     .sort((a, b) => {
-      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+      const priorityOrder: Record<import('@shared/types').GoalPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      return priorityOrder[a.priority as import('@shared/types').GoalPriority] - priorityOrder[b.priority as import('@shared/types').GoalPriority];
     })
     .slice(0, 3);
 

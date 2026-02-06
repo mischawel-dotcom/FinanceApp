@@ -32,22 +32,22 @@ export default function IncomePage() {
   const [activeTab, setActiveTab] = useState<'entries' | 'categories'>('entries');
 
   // Category Handlers
-  const handleCreateCategory = async (data: Omit<IncomeCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createIncomeCategory(data);
+  const handleCreateCategory = async () => {
+    await createIncomeCategory();
     setIsCategoryModalOpen(false);
   };
 
-  const handleUpdateCategory = async (data: Omit<IncomeCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateCategory = async () => {
     if (editingCategory) {
-      await updateIncomeCategory(editingCategory.id, data);
+      await updateIncomeCategory();
       setEditingCategory(null);
       setIsCategoryModalOpen(false);
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
+  const handleDeleteCategory = async () => {
     if (confirm('Kategorie wirklich löschen?')) {
-      await deleteIncomeCategory(id);
+      await deleteIncomeCategory();
     }
   };
 
@@ -62,22 +62,22 @@ export default function IncomePage() {
   };
 
   // Income Handlers
-  const handleCreateIncome = async (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createIncome(data);
+  const handleCreateIncome = async () => {
+    await createIncome();
     setIsIncomeModalOpen(false);
   };
 
-  const handleUpdateIncome = async (data: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateIncome = async () => {
     if (editingIncome) {
-      await updateIncome(editingIncome.id, data);
+      await updateIncome();
       setEditingIncome(null);
       setIsIncomeModalOpen(false);
     }
   };
 
-  const handleDeleteIncome = async (id: string) => {
+  const handleDeleteIncome = async () => {
     if (confirm('Einnahme wirklich löschen?')) {
-      await deleteIncome(id);
+      await deleteIncome();
     }
   };
 
@@ -118,7 +118,7 @@ export default function IncomePage() {
           <Button size="sm" variant="secondary" onClick={() => openEditCategoryModal(cat)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>
+          <Button size="sm" variant="danger" onClick={handleDeleteCategory}>
             Löschen
           </Button>
         </div>
@@ -156,7 +156,7 @@ export default function IncomePage() {
           <Button size="sm" variant="secondary" onClick={() => openEditIncomeModal(inc)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteIncome(inc.id)}>
+          <Button size="sm" variant="danger" onClick={handleDeleteIncome}>
             Löschen
           </Button>
         </div>
@@ -212,9 +212,6 @@ export default function IncomePage() {
       {/* Entries Tab */}
       {activeTab === 'entries' && (
         <Card 
-          role="tabpanel"
-          id="income-panel-entries"
-          aria-labelledby="income-tab-entries"
           title="Einnahmen" 
           actions={
             <Button onClick={openCreateIncomeModal}>
@@ -233,9 +230,6 @@ export default function IncomePage() {
       {/* Categories Tab */}
       {activeTab === 'categories' && (
         <Card
-          role="tabpanel"
-          id="income-panel-categories"
-          aria-labelledby="income-tab-categories"
           title="Einnahme-Kategorien"
           actions={
             <Button onClick={openCreateCategoryModal}>
