@@ -14,7 +14,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const errorId = error ? `${selectId}-error` : undefined;
     const helperId = helperText && !error ? `${selectId}-help` : undefined;
     const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined;
-
     return (
       <div className="w-full">
         {label && (

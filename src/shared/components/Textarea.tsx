@@ -13,7 +13,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const errorId = error ? `${textareaId}-error` : undefined;
     const helperId = helperText && !error ? `${textareaId}-help` : undefined;
     const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined;
-
     return (
       <div className="w-full">
         {label && (
