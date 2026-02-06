@@ -20,7 +20,11 @@ class LocalStorageService implements StorageService {
   async set<T>(key: string, value: T): Promise<void> {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
+    } catch (error: any) {
+      if (error && error.name === 'QuotaExceededError') {
+        console.error(`localStorage Quota überschritten (${key})`);
+        throw new Error('localStorage Quota überschritten: Bitte löschen Sie alte Daten oder leeren Sie den Speicher.');
+      }
       console.error(`Error writing to localStorage (${key}):`, error);
       throw error;
     }

@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
+import { z, ZodIssue } from 'zod';
 import { format } from 'date-fns';
-import type { Income, IncomeCategory, RecurrenceInterval } from '@shared/types';
+import type { Income, IncomeCategory, RecurrenceInterval } from '../../shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
 
 interface IncomeFormProps {
@@ -31,44 +32,66 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // Zod Schema für Validierung
+  const schema = z.object({
+    title: z.string().min(1, 'Titel ist erforderlich'),
+    amount: z.string().refine((val) => !!val && parseFloat(val) > 0, {
+      message: 'Betrag muss größer als 0 sein',
+    }),
+    date: z.string().min(1, 'Datum ist erforderlich'),
+    categoryId: z.string().min(1, 'Kategorie ist erforderlich'),
+    isRecurring: z.boolean(),
+    recurrenceInterval: z.string().optional(),
+    notes: z.string().optional(),
+  });
 
   const validate = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.title.trim()) {
-      newErrors.title = 'Titel ist erforderlich';
+    // Kategorie-Existenz prüfen
+    const categoryExists = categories.some((cat) => cat.id === formData.categoryId);
+    const result = schema.safeParse(formData);
+    let fieldErrors: Record<string, string> = {};
+    if (!categoryExists) {
+      fieldErrors.categoryId = 'Kategorie existiert nicht mehr';
     }
-    
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Betrag muss größer als 0 sein';
+    if (!result.success) {
+      result.error.issues.forEach((err: ZodIssue) => {
+        if (typeof err.path[0] === 'string' || typeof err.path[0] === 'number') {
+          fieldErrors[String(err.path[0])] = err.message;
+        }
+      });
     }
-    
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Kategorie ist erforderlich';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(fieldErrors);
+    return Object.keys(fieldErrors).length === 0;
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
+    setGeneralError(null);
     if (!validate()) return;
-    
-    onSubmit({
-      title: formData.title,
-      amount: parseFloat(formData.amount),
-      date: new Date(formData.date),
-      categoryId: formData.categoryId,
-      isRecurring: formData.isRecurring,
-      recurrenceInterval: formData.isRecurring ? formData.recurrenceInterval : undefined,
-      notes: formData.notes || undefined,
-    });
+    try {
+      onSubmit({
+        title: formData.title,
+        amount: parseFloat(formData.amount),
+        date: new Date(formData.date),
+        categoryId: formData.categoryId,
+        isRecurring: formData.isRecurring,
+        recurrenceInterval: formData.isRecurring ? formData.recurrenceInterval : undefined,
+        notes: formData.notes || undefined,
+      });
+    } catch (err: any) {
+      setGeneralError(err?.message || 'Unbekannter Fehler beim Speichern');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {generalError && (
+        <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded mb-2">
+          {generalError}
+        </div>
+      )}
       <Input
         label="Titel"
         required

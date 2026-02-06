@@ -125,15 +125,14 @@ export const useAppStore = create<AppStore>((set) => ({
   // Initialize seed data on first launch
   initializeSeedData: async () => {
     const isInitialized = localStorage.getItem(INIT_FLAG_KEY);
-    
-    if (isInitialized) {
-      // Daten bereits vorhanden, nur laden
+    if (isInitialized === 'true' || isInitialized === 'pending') {
+      // Daten bereits vorhanden oder Initialisierung läuft, nur laden
       return;
     }
-
+    // Setze Flag sofort auf 'pending', um parallele Initialisierungen zu verhindern
+    localStorage.setItem(INIT_FLAG_KEY, 'pending');
     console.log('Initializing seed data...');
     set({ isLoading: true });
-
     try {
       // 1. Kategorien erstellen
       const createdIncomeCategories = await Promise.all(
@@ -178,6 +177,7 @@ export const useAppStore = create<AppStore>((set) => ({
       localStorage.setItem(INIT_FLAG_KEY, 'true');
       console.log('Seed data initialized successfully!');
     } catch (error) {
+      localStorage.removeItem(INIT_FLAG_KEY); // Bei Fehler Flag zurücksetzen
       console.error('Error initializing seed data:', error);
       set({ error: 'Fehler beim Initialisieren der Demo-Daten' });
     } finally {

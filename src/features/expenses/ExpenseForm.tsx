@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { format } from 'date-fns';
-import type { Expense, ExpenseCategory, ImportanceLevel } from '@shared/types';
+import type { Expense, ExpenseCategory, ImportanceLevel } from '../../shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
 
 interface ExpenseFormProps {
@@ -30,39 +30,44 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
+    // Kategorie-Existenz prüfen
+    const categoryExists = categories.some((cat) => cat.id === formData.categoryId);
+    if (!categoryExists) {
+      newErrors.categoryId = 'Kategorie existiert nicht mehr';
+    }
     if (!formData.title.trim()) {
       newErrors.title = 'Titel ist erforderlich';
     }
-    
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Betrag muss größer als 0 sein';
     }
-    
     if (!formData.categoryId) {
       newErrors.categoryId = 'Kategorie ist erforderlich';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
+    setGeneralError(null);
     if (!validate()) return;
-    
-    onSubmit({
-      title: formData.title,
-      amount: parseFloat(formData.amount),
-      date: new Date(formData.date),
-      categoryId: formData.categoryId,
-      importance: parseInt(formData.importance) as ImportanceLevel,
-      notes: formData.notes || undefined,
-    });
+    try {
+      onSubmit({
+        title: formData.title,
+        amount: parseFloat(formData.amount),
+        date: new Date(formData.date),
+        categoryId: formData.categoryId,
+        importance: parseInt(formData.importance) as ImportanceLevel,
+        notes: formData.notes || undefined,
+      });
+    } catch (err: any) {
+      setGeneralError(err?.message || 'Unbekannter Fehler beim Speichern');
+    }
   };
 
   const getImportanceColor = (level: string) => {
@@ -79,6 +84,11 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {generalError && (
+        <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded mb-2">
+          {generalError}
+        </div>
+      )}
       <Input
         label="Titel"
         required

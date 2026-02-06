@@ -25,14 +25,14 @@
 
 | ID | Titel | Status |
 |---|---|---|
-| F1 | Fehlende Input-Validierung & Numeric Boundary Checks | 🔴 Open |
-| F2 | Keine Überprüfung auf Kategorie-Existenz vor Create/Delete | 🔴 Open |
-| F3 | Unzureichendes Error-Handling & fehlende User Feedback | 🔴 Open |
-| F4 | Kein Data Encryption für localStorage (Sensible Finanzdaten) | 🔴 Open |
-| F5 | Keine Authentifizierung/Autorisierung | 🔴 Open (Phase 2) |
-| F6 | Date-Parsing vulnerable für Zeitzone-Fehler | 🔴 Open |
-| F7 | Race Condition in initializeSeedData | 🔴 Open |
-| F8 | localStorage Quota-Fehler nicht behandelt | 🔴 Open |
+| F1 | Fehlende Input-Validierung & Numeric Boundary Checks | Fixed |
+| F2 | Keine Überprüfung auf Kategorie-Existenz vor Create/Delete | Fixed |
+| F3 | Unzureichendes Error-Handling & fehlende User Feedback | Fixed |
+| F4 | Kein Data Encryption für localStorage (Sensible Finanzdaten) | Open |
+| F5 | Keine Authentifizierung/Autorisierung | Open |
+| F6 | Date-Parsing vulnerable für Zeitzone-Fehler | Fixed |
+| F7 | Race Condition in initializeSeedData | Fixed |
+| F8 | localStorage Quota-Fehler nicht behandelt | Fixed |
 
 ---
 
@@ -40,11 +40,11 @@
 
 | ID | Titel | Status |
 |---|---|---|
-| F9 | Keine Tests für Forms & UI Components | 🟠 Open |
-| F10 | Keine Versionierung der Seed Data | 🟠 Open |
-| F11 | Keine Offline-First Strategie (Service Worker) | 🟠 Backlog |
-| F12 | GenerateId() nutzt insecure Methode | 🟠 Open |
-| F13 | Zu viele console.error() Logs in Production | 🟠 Open |
+| F9 | Keine Tests für Forms & UI Components | Open |
+| F10 | Keine Versionierung der Seed Data | Open |
+| F11 | Keine Offline-First Strategie (Service Worker) | Open |
+| F12 | GenerateId() nutzt insecure Methode | Fixed |
+| F13 | Zu viele console.error() Logs in Production | Open |
 
 ---
 
@@ -60,19 +60,29 @@
 ## 🔵 Niedrige Findings (3)
 
 - F18: TailwindCSS Utility-Klassen nicht DRY
-- F19: Keine .env.example Datei ✅ **Fixed**
+- F19: Keine .env.example Datei (Fixed)
 - F20: Fehlende Keyboard-Navigation in Modalen
 
 ---
 
-## ⚡ Quick Wins (Max. 2 Tage)
+## ✅ Erledigte Findings
+
+- **F1:** Input-Validierung mit Zod für alle Forms umgesetzt
+- **F2:** Kategorie-Referenzprüfung bei Income/Expense-Formularen
+- **F3:** Error-Handling & User-Feedback für Forms
+
+---
+
+# ⚡ Quick Wins (Max. 2 Tage)
 
 1. ✅ `.env.example` erstellen (5 Min) - **DONE**
-2. Date-Parsing mit `parseISO` fixen (30 Min)
-3. Secure ID-Generation mit `crypto.randomUUID()` (15 Min)
-4. localStorage Quota-Check (30 Min)
-5. Race-Condition in initializeSeedData (45 Min)
-6. Zod-Validierung Setup (2h)
+2. ✅ Zod-Validierung Setup (2h) - **DONE**
+3. ✅ Kategorie-Referenzprüfung bei Income/Expense-Formularen (F2) - **DONE**
+4. ✅ Error-Handling & User-Feedback für Forms (F3) - **DONE**
+5. ✅ Date-Parsing mit `parseISO` fixen (30 Min) - **DONE**
+6. ✅ Secure ID-Generation mit `crypto.randomUUID()` (15 Min) - **DONE**
+7. ✅ localStorage Quota-Check (30 Min) - **DONE**
+8. ✅ Race-Condition in initializeSeedData (45 Min) - **DONE**
 
 **Gesamtaufwand:** ~6–8 Stunden
 
