@@ -1,0 +1,7 @@
+ein mentales Finanzmodell sauber definieren (Begriffe, Logik)  ok	mentales Finanzmodell
+
+ein ideales Dashboard konzipieren					Dashboard
+
+die Empfehlungslogik grob als Regeln / Engine skizzieren		Empfehlungslogik			
+
+oder das Ganze klar gegen bestehende AppsFinA positionieren
