@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+// Temporary debugging: import repositories
+import { incomeRepository, expenseRepository, assetRepository, goalRepository } from "@data/repositories";
 import type { DashboardModel } from "@/planning/planFacade";
 import { buildDashboardModelFromRepositories } from "@/planning/planFacade";
 
@@ -12,7 +14,22 @@ export default function DashboardPlanningPreview() {
 
   useEffect(() => {
     (async () => {
+      // --- Temporary debugging: check repository data ---
       try {
+        const incomes = await incomeRepository.getAll();
+        const expenses = await expenseRepository.getAll();
+        const assets = await assetRepository.getAll();
+        const goals = await goalRepository.getAll();
+        console.log("[DEBUG] Repository counts:", {
+          incomes: incomes.length,
+          expenses: expenses.length,
+          assets: assets.length,
+          goals: goals.length,
+        });
+        if (incomes.length > 0) {
+          console.log("[DEBUG] Sample income:", incomes[0]);
+        }
+        // --- End temporary debugging ---
         const m = await buildDashboardModelFromRepositories({ forecastMonths: 24 });
         setModel(m);
       } catch (e) {

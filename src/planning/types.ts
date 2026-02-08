@@ -19,7 +19,7 @@ export type MonthKey = `${number}-${'01'|'02'|'03'|'04'|'05'|'06'|'07'|'08'|'09'
 
 export interface PlanSettings {
   forecastMonths: number; // e.g. 12 or 24
-  startMonth: MonthKey;   // e.g. "2024-06"
+  startMonth?: MonthKey;   // e.g. "2024-06"
 }
 
 /**

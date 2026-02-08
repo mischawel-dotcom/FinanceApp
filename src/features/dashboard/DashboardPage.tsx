@@ -1,3 +1,4 @@
+import DashboardPlanningPreview from "@/features/dashboard/DashboardPlanningPreview";
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -92,6 +93,8 @@ export default function DashboardPage() {
           {format(now, 'MMMM yyyy')} - Dein finanzieller Überblick
         </p>
       </div>
+      {/* Temporary: Planning Preview */}
+      <DashboardPlanningPreview />
 
       {/* Main KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

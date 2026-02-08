@@ -9,6 +9,7 @@ import {
 } from './selectors';
 
 import { buildPlanInputFromRepoData } from './adapters/fromRepositories';
+import { buildPlanInputFromPersistedStore } from './adapters/fromPersistedStore';
 
 import {
   incomeRepository,
@@ -31,20 +32,7 @@ export type DashboardModel = {
 export async function buildProjectionFromRepositories(
   settings: PlanSettings
 ): Promise<PlanProjection> {
-  const [incomes, expenses, assets, goals] = await Promise.all([
-    incomeRepository.getAll(),
-    expenseRepository.getAll(),
-    assetRepository.getAll(),
-    goalRepository.getAll(),
-  ]);
-
-  const input = buildPlanInputFromRepoData({
-    incomes,
-    expenses,
-    goals,
-    assets,
-  });
-
+  const input = buildPlanInputFromPersistedStore();
   return buildPlanProjection(input, settings);
 }
 
@@ -52,17 +40,9 @@ export async function buildDashboardModelFromRepositories(
   settings: PlanSettings,
   options?: { goalLimit?: number }
 ): Promise<DashboardModel> {
-  const [projection, repoGoals] = await Promise.all([
-    buildProjectionFromRepositories(settings),
-    goalRepository.getAll(),
-  ]);
-
-  const domainGoals: Goal[] = buildPlanInputFromRepoData({
-    incomes: [],
-    expenses: [],
-    assets: [],
-    goals: repoGoals,
-  }).goals;
+  const planInput = buildPlanInputFromPersistedStore();
+  const projection = buildPlanProjection(planInput, settings);
+  const domainGoals: Goal[] = planInput.goals;
 
   return {
     heroFree: selectHeroFree(projection),
