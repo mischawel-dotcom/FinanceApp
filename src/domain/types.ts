@@ -9,7 +9,8 @@
  * See FinApp4CP.md
  */
 
-export type Money = number; // consider cents (integer) later if needed
+export type Money = number; // Euro float, legacy
+export type Cents = number; // integer cents, planning core
 
 /**
  * ISO-8601 date string (YYYY-MM-DD).

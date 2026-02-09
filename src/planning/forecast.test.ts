@@ -1,3 +1,27 @@
+  it('caps planned goal contributions statefully', () => {
+    const settings: PlanSettings = { forecastMonths: 2, startMonth: '2026-01' as MonthKey };
+    const goals = [
+      {
+        id: 'g1',
+        name: 'TestGoal',
+        targetAmount: 1.00,
+        currentAmount: 0.90,
+        monthlyContribution: 0.50,
+        priority: 1,
+      },
+    ];
+    const input = mkInput({ goals });
+    const proj = buildPlanProjection(input, settings);
+    // Cap: only 0.10 needed in first month, then 0 in second
+    expect(proj.timeline[0].buckets.planned).toBe(10); // cents
+    expect(proj.timeline[1].buckets.planned).toBe(0);
+    expect(proj.timeline[0].plannedGoalBreakdownById.g1).toBe(10);
+    expect(proj.timeline[1].plannedGoalBreakdownById?.g1).toBeUndefined();
+    // Guards: Integer cents
+    expect(() => buildPlanProjection(input, settings)).not.toThrow();
+    expect(Number.isInteger(proj.timeline[0].buckets.free)).toBe(true);
+    expect(Number.isInteger(proj.timeline[0].buckets.planned)).toBe(true);
+  });
 import { describe, it, expect } from 'vitest';
 import { buildPlanProjection } from './forecast';
 import type { PlanInput, PlanSettings, MonthKey } from './types';

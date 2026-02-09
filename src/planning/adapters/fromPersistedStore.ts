@@ -54,6 +54,10 @@ export function buildPlanInputFromPersistedStore(): PlanInput {
           targetDate: parseDateField(g.targetDate),
           createdAt: parseDateField(g.createdAt),
           updatedAt: parseDateField(g.updatedAt),
+          monthlyContributionCents:
+            typeof g.monthlyContributionCents === 'number' && Number.isFinite(g.monthlyContributionCents)
+              ? g.monthlyContributionCents
+              : undefined,
         }))
       : [];
     return buildPlanInputFromRepoData({ incomes, expenses, assets, goals });

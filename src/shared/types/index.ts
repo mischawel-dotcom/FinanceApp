@@ -114,6 +114,7 @@ export interface FinancialGoal {
   targetDate?: Date;
   priority: GoalPriority;
   description?: string;
+  monthlyContributionCents?: number;
   createdAt: Date;
   updatedAt: Date;
 }

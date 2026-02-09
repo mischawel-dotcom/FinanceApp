@@ -1,3 +1,9 @@
+function toCents(centsValue: unknown, euroValue: unknown): number {
+  if (typeof centsValue === "number" && Number.isFinite(centsValue)) return Math.round(centsValue);
+  if (typeof euroValue === "number" && Number.isFinite(euroValue)) return Math.round(euroValue * 100);
+  return 0;
+}
+import { simulateGoalsByMonth } from '../domain/simulateGoals';
 /**
  * See FinApp4CP.md
  *
@@ -27,7 +33,6 @@ function getCurrentMonthKey(): MonthKey {
   const now = new Date();
   return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}` as MonthKey;
 }
-
 // Helper: generate MonthKey array for forecast horizon
 function getMonthKeys(startMonth: MonthKey, count: number): MonthKey[] {
   const [startYear, startMonthNum] = startMonth.split('-').map(Number);
@@ -46,7 +51,6 @@ function getMonthKeys(startMonth: MonthKey, count: number): MonthKey[] {
 
   return keys;
 }
-
 // Helper: normalize amount to monthly based on Interval type
 function normalize(amount: number, interval: Interval): number {
   switch (interval) {
@@ -80,9 +84,24 @@ export function buildPlanProjection(
   }));
 
   const reserveContrib = input.reserves.reduce((sum, r) => sum + r.monthlyContribution, 0);
-  const goalContrib = input.goals.reduce((sum, g) => sum + (g.monthlyContribution || 0), 0);
   const investContrib = input.investments.reduce((sum, i) => sum + i.monthlyContribution, 0);
 
+  // Goals simulation (stateful, capped)
+
+  // --- Monthly ContributionCents Integration ---
+  // Prepare goals array (safe default)
+  const goals = (input.goals ?? []);
+
+  // Robust stateful capping für planned goal contributions
+  const remainingById: Record<string, number> = {};
+  for (const goal of goals) {
+    const id = (goal.goalId ?? goal.id) as string;
+    const targetCents = toCents(goal.targetAmountCents, goal.targetAmount);
+    const currentCents = toCents(goal.currentAmountCents, goal.currentAmount);
+    remainingById[id] = Math.max(0, targetCents - currentCents);
+  }
+
+  const timeline: MonthProjection[] = [];
   const paymentsByMonth: Record<MonthKey, number> = {};
   if (input.knownPayments) {
     for (const payment of input.knownPayments) {
@@ -90,29 +109,52 @@ export function buildPlanProjection(
       paymentsByMonth[m] = (paymentsByMonth[m] || 0) + payment.amount;
     }
   }
-
-  const timeline = monthKeys.map(month => {
+  for (const month of monthKeys) {
+    const plannedGoalBreakdownById: Record<string, number> = {};
+    for (const goal of goals) {
+      const id = (goal.goalId ?? goal.id) as string;
+      const rateCents = toCents(goal.monthlyContributionCents, goal.monthlyContribution);
+      const contrib = Math.min(rateCents, remainingById[id] ?? 0);
+      if (contrib > 0) {
+        plannedGoalBreakdownById[id] = contrib;
+      }
+      remainingById[id] = Math.max(0, (remainingById[id] ?? 0) - contrib);
+    }
+    const planned = Object.values(plannedGoalBreakdownById).reduce((sum, v) => sum + v, 0);
     const income = incomes
       .filter(i => (!i.startDate || month >= i.startDate) && (!i.endDate || month <= i.endDate))
       .reduce((sum, i) => sum + i.monthly, 0);
-
     const bound =
       expenses
         .filter(e => (!e.startDate || month >= e.startDate) && (!e.endDate || month <= e.endDate))
         .reduce((sum, e) => sum + e.monthly, 0)
       + reserveContrib
       + (paymentsByMonth[month] || 0);
-
-    const planned = goalContrib;
     const invested = investContrib;
     const free = income - bound - planned - invested;
-
-    return {
+    // DEV-only integer guards
+    const assertInt = (n: number, label: string) => {
+      if (!Number.isInteger(n)) throw new Error(`[forecast] ${label} must be integer cents, got ${n}`);
+    };
+    if (import.meta.env?.MODE !== 'production') {
+      assertInt(income, 'income');
+      assertInt(bound, 'bound');
+      assertInt(planned, 'planned');
+      assertInt(invested, 'invested');
+      assertInt(free, 'free');
+      Object.entries(plannedGoalBreakdownById).forEach(([k, v]) => assertInt(v, `plannedGoalBreakdownById[${k}]`));
+    }
+    timeline.push({
       month,
       income,
-      buckets: { bound, planned, invested, free }
-    };
-  });
+      buckets: { bound, planned, invested, free },
+      plannedGoalBreakdownById
+    });
+  }
+
+  // (moved above, paymentsByMonth is now initialized before timeline loop)
+
+  // (entfernt, da stateful Variante weiter oben definiert ist)
 
   const events: PlanProjection['events'] = [];
 
@@ -139,7 +181,7 @@ export function buildPlanProjection(
     }
   }
 
-  const goals = input.goals.map(goal => {
+  const goalSummaries = input.goals.map(goal => {
     let etaMonth: MonthKey | undefined;
     let reachable = false;
 
@@ -166,7 +208,7 @@ export function buildPlanProjection(
   return {
     settings,
     timeline,
-    goals,
+    goals: goalSummaries,
     events
   };
 }

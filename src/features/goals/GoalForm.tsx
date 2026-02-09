@@ -24,6 +24,9 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
     targetDate: initialData?.targetDate ? format(initialData.targetDate, 'yyyy-MM-dd') : '',
     priority: initialData?.priority || 'medium' as GoalPriority,
     description: initialData?.description || '',
+    monthlyContributionEuro: initialData?.monthlyContributionCents !== undefined && initialData?.monthlyContributionCents >= 0
+      ? (initialData.monthlyContributionCents / 100).toFixed(2)
+      : '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,6 +55,14 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
     
     if (!validate()) return;
     
+    // Parse monthlyContributionEuro to cents
+    let monthlyContributionCents: number | undefined = undefined;
+    if (formData.monthlyContributionEuro !== undefined && formData.monthlyContributionEuro !== "") {
+      const euro = parseFloat(formData.monthlyContributionEuro);
+      if (!isNaN(euro) && isFinite(euro) && euro > 0) {
+        monthlyContributionCents = Math.round(euro * 100);
+      }
+    }
     onSubmit({
       name: formData.name,
       targetAmount: parseFloat(formData.targetAmount),
@@ -59,6 +70,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
       targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
       priority: formData.priority,
       description: formData.description || undefined,
+      monthlyContributionCents,
     });
   };
 
@@ -97,7 +109,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         rows={2}
       />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Input
           label="Zielbetrag (€)"
           type="number"
@@ -118,6 +130,15 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
           error={errors.currentAmount}
           placeholder="0.00"
+        />
+
+        <Input
+          label="Monatliche Sparrate (EUR)"
+          type="number"
+          step="0.01"
+          value={formData.monthlyContributionEuro}
+          onChange={(e) => setFormData({ ...formData, monthlyContributionEuro: e.target.value })}
+          placeholder="Optional"
         />
       </div>
 

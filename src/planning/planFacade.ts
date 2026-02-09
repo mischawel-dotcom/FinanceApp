@@ -9,7 +9,7 @@ import {
 } from './selectors';
 
 import { buildPlanInputFromRepoData } from './adapters/fromRepositories';
-import { buildPlanInputFromPersistedStore } from './adapters/fromPersistedStore';
+import { buildPlanInputFromPersistedStore } from '@/planning/adapters/fromPersistedStore';
 
 import {
   incomeRepository,

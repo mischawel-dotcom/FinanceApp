@@ -13,6 +13,7 @@ import type {
   Goal,
   InvestmentPlan,
   KnownFuturePayment,
+  Cents,
 } from '../domain/types';
 
 export type MonthKey = `${number}-${'01'|'02'|'03'|'04'|'05'|'06'|'07'|'08'|'09'|'10'|'11'|'12'}`;
@@ -36,18 +37,18 @@ export interface PlanInput {
 }
 
 /** The four money buckets shown on the dashboard (per month). */
-export interface BucketBreakdown {
-  bound: number;    // fixed costs + reserve contributions
-  planned: number;  // goal contributions
-  invested: number; // investment contributions
-  free: number;     // remaining monthly slack
+  bound: Cents;    // fixed costs + reserve contributions
+  planned: Cents;  // goal contributions
+  invested: Cents; // investment contributions
+  free: Cents;     // remaining monthly slack
 }
 
 /** Projection for a single month on the timeline. */
-export interface MonthProjection {
   month: MonthKey;
-  income: number;          // total monthly-normalized income
+  income: Cents;          // total monthly-normalized income
   buckets: BucketBreakdown;
+  /** Optional: planned goal breakdown for this month (sparse, cents) */
+  plannedGoalBreakdownById?: Record<string, Cents>;
 }
 
 /** Goal projection for timeline summary. */
