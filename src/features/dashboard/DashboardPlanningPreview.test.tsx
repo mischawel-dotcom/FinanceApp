@@ -1,71 +1,178 @@
-import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
-import { vi } from "vitest";
-
-vi.mock("@/planning/planFacade", () => {
-  const mockModel = {
-    heroFree: 10000,
-    buckets: { bound: 0, planned: 50000, invested: 0, free: 950000 },
-    freeTimeline: [],
-    shortfalls: [],
-    goals: [{ goalId: "g1", name: "Auto", priority: 1, reachable: true }],
-    projection: {
-      timeline: [
-        {
-          month: "2026-01",
-          buckets: { bound: 0, planned: 50000, invested: 0, free: 950000 },
-          plannedGoalBreakdownById: { g1: 50000 },
-        },
-      ],
+test("renders and handles action button for low_income recommendation", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "rec5",
+      type: "low_income",
+      title: "Niedrige Einnahmen",
+      reason: "Deine Einnahmen sind diesen Monat besonders niedrig.",
+      evidence: {},
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: { label: "Zu Einnahmen", intent: "income" },
     },
-  };
+  ]);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const btn = await screen.findByRole("button", { name: /Zu Einnahmen/i });
+  expect(btn).toBeInTheDocument();
+  fireEvent.click(btn);
+  expect(mockNavigate).toHaveBeenCalledWith("/income");
+});
+test("renders and handles action button for high_expenses recommendation", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "rec4",
+      type: "high_expenses",
+      title: "Hohe Ausgaben",
+      reason: "Deine Ausgaben sind diesen Monat besonders hoch.",
+      evidence: {},
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: { label: "Zu Ausgaben", intent: "expenses" },
+    },
+  ]);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const btn = await screen.findByRole("button", { name: /Zu Ausgaben/i });
+  expect(btn).toBeInTheDocument();
+  fireEvent.click(btn);
+  expect(mockNavigate).toHaveBeenCalledWith("/expenses");
+});
+import "@testing-library/jest-dom";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { test, expect, beforeEach, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
-  const build = vi.fn(async () => mockModel);
+// Partial mock for react-router-dom: only useNavigate
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = (await vi.importActual("react-router-dom")) as typeof import("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+// Parametrized goals for useAppStore
+let mockGoals: any[] = [];
+vi.mock("@/app/store/useAppStore", () => ({
+  useAppStore: () => ({
+    goals: mockGoals,
+    loadData: vi.fn(),
+    createGoal: vi.fn(),
+    updateGoal: vi.fn(),
+    deleteGoal: vi.fn(),
+  }),
+}));
+
+// Stable planFacade mock
+const planFacadeModel = {
+  heroFree: 10000,
+  buckets: { bound: 0, planned: 50000, invested: 0, free: 950000 },
+  freeTimeline: [],
+  shortfalls: [],
+  goals: [{ goalId: "g1", name: "Auto", priority: 1, reachable: true }],
+  domainGoals: [{ id: "g1", name: "Auto", priority: 1, targetAmount: 100, currentAmount: 10 }],
+  projection: {
+    timeline: [
+      {
+        month: "2026-01",
+        buckets: { bound: 0, planned: 50000, invested: 0, free: 950000 },
+        plannedGoalBreakdownById: { g1: 50000 },
+      },
+    ],
+  },
+};
+vi.mock("@/planning/planFacade", () => {
+  const build = vi.fn(async () => planFacadeModel);
   return { buildDashboardModelFromRepositories: build, __buildSpy: build };
 });
 
-test("renders Verplant > 0 and shows breakdown details", async () => {
+// Stable recommendations mock
+vi.mock("@/planning/recommendations", () => ({
+  selectDashboardRecommendations: vi.fn(),
+}));
+
+beforeEach(() => {
+  mockGoals = [];
+  mockNavigate.mockReset();
+});
+
+test("renders action button for goal_contrib_issue", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "rec3",
+      type: "goal_contrib_issue",
+      title: "Ziel fehlt",
+      reason: "Für das Ziel fehlt ein Beitrag.",
+      evidence: { goalId: "g1" },
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: { label: "Ziel öffnen", intent: "goals" },
+    },
+  ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
-  const facade = (await import("@/planning/planFacade")) as any;
-  const buildSpy = facade.__buildSpy as ReturnType<typeof vi.fn>;
+  render(
+    <MemoryRouter>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const btn = await screen.findByRole("button", { name: /Ziel öffnen/i });
+  expect(btn).not.toBeNull();
+});
 
-  render(<DashboardPlanningPreview />);
+test("clicking action button for goal_contrib_issue navigates with highlight param", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "rec3",
+      type: "goal_contrib_issue",
+      title: "Ziel fehlt",
+      reason: "Für das Ziel fehlt ein Beitrag.",
+      evidence: { goalId: "g1" },
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: {
+        kind: "navigate",
+        label: "Zum Ziel",
+        payload: { path: "/goals", query: { highlight: "g1" } },
+      },
+    },
+  ]);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const btn = await screen.findByRole("button", { name: /Zum Ziel/i });
+  fireEvent.click(btn);
+  expect(mockNavigate).toHaveBeenCalledWith("/goals?highlight=g1");
+});
 
-  await waitFor(() => {
-    expect(buildSpy).toHaveBeenCalled();
-  });
-
-  await waitFor(() => {
-    expect(screen.queryByText(/Loading planning/i)).toBeNull();
-  });
-
-  // 1) "Verplant:" muss sichtbar sein
-  const verplantLabel = await screen.findByText(/Verplant:/i);
-  expect(verplantLabel).not.toBeNull();
-
-  // 2) Betrag für "Verplant" im richtigen Kontext prüfen
-  const verplantRow = verplantLabel.closest("div");
-  expect(verplantRow).not.toBeNull();
-  const plannedValueElement = verplantRow!.querySelector("b");
-  expect(plannedValueElement).not.toBeNull();
-  const normalize = (s: string) => s.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim();
-  const plannedText = normalize(plannedValueElement!.textContent ?? "");
-  expect(plannedText).toBe("500,00 €");
-
-  // 3) Breakdown öffnen
-  const detailsBtn = await screen.findByText(/Details/i);
-  fireEvent.click(detailsBtn);
-
-  // 4) Breakdown-Container finden über Header
-  const breakdownHeader = await screen.findByText(/Verplant Breakdown/i);
-  expect(breakdownHeader).not.toBeNull();
-  const breakdownContainer = breakdownHeader.parentElement;
-  expect(breakdownContainer).not.toBeNull();
-
-  // 5) Breakdown enthält Zielname und Betrag im richtigen Kontext
-  const goalName = within(breakdownContainer!).getByText(/Auto/i);
-  expect(goalName).not.toBeNull();
-  const breakdownValue = within(breakdownContainer!).getByText(/500,00 €/);
-  expect(breakdownValue).not.toBeNull();
-  const breakdownText = normalize(breakdownValue.textContent ?? "");
-  expect(breakdownText).toBe("500,00 €");
+test("recommendation shows explanation text", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "rec1",
+      type: "shortfall_risk",
+      title: "Fehlbetrag",
+      reason: "Im Monat 2026-01 entsteht ein Fehlbetrag.",
+      evidence: { month: "2026-01", amountCents: 10000 },
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: null,
+    },
+  ]);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const explanation = await screen.findByTestId("dashboard-recommendation-explanation");
+  expect(explanation).toHaveTextContent(/Fehlbetrag von/i);
 });

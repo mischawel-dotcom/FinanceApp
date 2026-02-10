@@ -3,9 +3,13 @@ import { incomeRepository, expenseRepository, assetRepository, goalRepository } 
 import type { DashboardModel } from "@/planning/planFacade";
 import { buildDashboardModelFromRepositories } from "@/planning/planFacade";
 import { formatCentsEUR } from "@/ui/formatMoney";
+import { selectDashboardRecommendations } from "@/planning/recommendations";
+import { useNavigate } from "react-router-dom";
+import { handleRecommendationAction } from "./recommendationActions";
 
 export default function DashboardPlanningPreview() {
-    const [showBreakdown, setShowBreakdown] = useState(false);
+  const navigate = useNavigate();
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [model, setModel] = useState<DashboardModel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,10 +42,14 @@ export default function DashboardPlanningPreview() {
   if (error) return <div style={{ padding: 16 }}>❌ Fehler: {error}</div>;
   if (!model) return <div style={{ padding: 16 }}>Loading planning…</div>;
 
-  const { heroFree, buckets, freeTimeline, shortfalls, goals, projection } = model;
 
-  // Find current month in projection
-  const currentMonth = projection.timeline[0]?.month;
+
+  const { heroFree, buckets, freeTimeline, shortfalls, goals, projection, domainGoals } = model;
+
+  // Empfehlungen berechnen (max. 2, defensiv) – nutze domainGoals (Goal[])
+  const recs = selectDashboardRecommendations(projection, domainGoals, heroFree) || [];
+
+  // Find plannedCents und Breakdown für aktuellen Monat
   const plannedCents = projection.timeline[0]?.buckets.planned ?? 0;
   const plannedBreakdown = projection.timeline[0]?.plannedGoalBreakdownById ?? {};
 
@@ -53,9 +61,73 @@ export default function DashboardPlanningPreview() {
     }))
     .filter(g => g.amount > 0);
 
+
+
+  function onRecommendationAction(action: any) {
+    handleRecommendationAction(action, { navigate });
+  }
+
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
       <h2 style={{ margin: 0 }}>Planning Preview</h2>
+
+      {/* Empfehlungen-Block */}
+      <div data-testid="dashboard-recommendations">
+        {recs.length > 0 && (
+          <>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Empfehlungen</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {recs.slice(0, 2).map((rec, i) => {
+                let explanation = null;
+                if (rec.type === "shortfall_risk" && rec.evidence?.month && typeof rec.evidence.amountCents === "number") {
+                  explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCentsEUR(rec.evidence.amountCents)}.`;
+                } else if (rec.type === "low_slack") {
+                  explanation = "Dein freier Spielraum ist aktuell sehr gering.";
+                } else if (rec.type === "goal_contrib_issue" && rec.evidence?.goalId) {
+                  explanation = `Für das Ziel '${rec.evidence.goalId}' ist ein monatlicher Beitrag geplant, aber nicht eingeplant.`;
+                }
+                return (
+                  <div
+                    key={rec.id || i}
+                    data-testid="dashboard-recommendation"
+                    style={{ border: "1px solid #e0b200", borderRadius: 8, padding: 10, background: "#fffbe6" }}
+                  >
+                    {rec.type === "shortfall_risk" ? (
+                      <span data-testid="dashboard-recommendation-badge" style={{ background: "#e57373", color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 12, marginRight: 8 }}>Risiko</span>
+                    ) : (
+                      <span data-testid="dashboard-recommendation-badge" style={{ background: "#1976d2", color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 12, marginRight: 8 }}>Hinweis</span>
+                    )}
+                    <b>{rec.title}</b>
+                    <div style={{ fontSize: 14, marginTop: 4 }}>{rec.reason}</div>
+                    {explanation && (
+                      <div style={{ fontSize: 13, marginTop: 6, color: "#555" }} data-testid="dashboard-recommendation-explanation">
+                        {explanation}
+                      </div>
+                    )}
+                    {rec.action && (
+                      <button
+                        data-testid="dashboard-recommendation-action"
+                        style={{ marginTop: 10, padding: "4px 14px", borderRadius: 6, border: "1px solid #1976d2", background: "#e3f2fd", color: "#1976d2", fontWeight: 600, cursor: "pointer" }}
+                        onClick={() => {
+                          if (rec.action.intent === "expenses") {
+                            navigate("/expenses");
+                          } else if (rec.action.intent === "income") {
+                            navigate("/income");
+                          } else {
+                            onRecommendationAction(rec.action!);
+                          }
+                        }}
+                      >
+                        {rec.action.label}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
         <div style={{ fontSize: 12, opacity: 0.7 }}>Verfügbar (aktueller Monat)</div>

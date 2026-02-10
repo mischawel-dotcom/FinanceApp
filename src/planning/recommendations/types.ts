@@ -25,6 +25,13 @@ export interface Recommendation {
     robustness: number;
     total: number;
   };
+  action?: {
+    label: string;
+    kind?: "open_planning" | "open_goal" | "open_goals" | "open_income" | "open_expenses";
+    payload?: { goalId?: string };
+    href?: string;
+    intent?: "goals" | "income" | "expenses" | "assets" | "planning";
+  };
 }
 
 import type { PlanProjection } from '../types';

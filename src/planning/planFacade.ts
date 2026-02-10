@@ -27,6 +27,7 @@ export type DashboardModel = {
   shortfalls: ReturnType<typeof selectShortfallEvents>;
   goals: ReturnType<typeof selectPrioritizedGoalSummaries>;
   projection: PlanProjection;
+  domainGoals: Goal[]; // neu: echte Domain Goals
 };
 
 export async function buildProjectionFromRepositories(
@@ -51,5 +52,6 @@ export async function buildDashboardModelFromRepositories(
     shortfalls: selectShortfallEvents(projection),
     goals: selectPrioritizedGoalSummaries(projection, domainGoals, { limit: options?.goalLimit ?? 3 }),
     projection,
+    domainGoals, // neu
   };
 }
