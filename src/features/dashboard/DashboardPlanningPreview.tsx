@@ -108,15 +108,7 @@ export default function DashboardPlanningPreview() {
                       <button
                         data-testid="dashboard-recommendation-action"
                         style={{ marginTop: 10, padding: "4px 14px", borderRadius: 6, border: "1px solid #1976d2", background: "#e3f2fd", color: "#1976d2", fontWeight: 600, cursor: "pointer" }}
-                        onClick={() => {
-                          if (rec.action.intent === "expenses") {
-                            navigate("/expenses");
-                          } else if (rec.action.intent === "income") {
-                            navigate("/income");
-                          } else {
-                            onRecommendationAction(rec.action!);
-                          }
-                        }}
+                        onClick={() => handleRecommendationAction(rec.action!, { navigate })}
                       >
                         {rec.action.label}
                       </button>

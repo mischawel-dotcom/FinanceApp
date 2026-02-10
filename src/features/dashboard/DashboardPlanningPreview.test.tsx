@@ -8,12 +8,12 @@ test("renders and handles action button for low_income recommendation", async ()
       reason: "Deine Einnahmen sind diesen Monat besonders niedrig.",
       evidence: {},
       score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
-      action: { label: "Zu Einnahmen", intent: "income" },
+      action: { label: "Zu Einnahmen", kind: "open_income" },
     },
   ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <DashboardPlanningPreview />
     </MemoryRouter>
   );
@@ -32,12 +32,12 @@ test("renders and handles action button for high_expenses recommendation", async
       reason: "Deine Ausgaben sind diesen Monat besonders hoch.",
       evidence: {},
       score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
-      action: { label: "Zu Ausgaben", intent: "expenses" },
+      action: { label: "Zu Ausgaben", kind: "open_expenses" },
     },
   ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <DashboardPlanningPreview />
     </MemoryRouter>
   );
@@ -118,7 +118,7 @@ test("renders action button for goal_contrib_issue", async () => {
   ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <DashboardPlanningPreview />
     </MemoryRouter>
   );
@@ -145,7 +145,7 @@ test("clicking action button for goal_contrib_issue navigates with highlight par
   ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <DashboardPlanningPreview />
     </MemoryRouter>
   );
@@ -169,7 +169,7 @@ test("recommendation shows explanation text", async () => {
   ]);
   const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <DashboardPlanningPreview />
     </MemoryRouter>
   );

@@ -24,7 +24,7 @@ describe("GoalsPage", () => {
 
   it("renders heading", () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <GoalsPage />
       </MemoryRouter>
     );
@@ -33,7 +33,7 @@ describe("GoalsPage", () => {
 
   it("shows empty state when no goals exist", () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <GoalsPage />
       </MemoryRouter>
     );
@@ -51,7 +51,7 @@ describe("GoalsPage", () => {
       },
     ];
     render(
-      <MemoryRouter initialEntries={["/goals?highlight=g1"]}>
+      <MemoryRouter initialEntries={["/goals?highlight=g1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <GoalsPage />
       </MemoryRouter>
     );

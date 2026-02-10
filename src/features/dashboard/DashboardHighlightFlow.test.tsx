@@ -104,7 +104,7 @@ describe("Dashboard → GoalsPage Highlight-Flow", () => {
       },
     ];
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<DashboardPlanningPreview />} />
           <Route path="/goals" element={<GoalsPage />} />
