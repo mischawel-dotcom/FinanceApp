@@ -1,3 +1,12 @@
+// Helper: parse euro string (with dot or comma) to integer cents
+function euroToCents(val: string): number {
+  if (!val) return 0;
+  // Replace comma with dot, remove spaces
+  const normalized = val.replace(/\s+/g, '').replace(',', '.');
+  const floatVal = parseFloat(normalized);
+  if (isNaN(floatVal)) return 0;
+  return Math.round(floatVal * 100);
+}
 import { useState, FormEvent } from 'react';
 import { z, ZodIssue } from 'zod';
 import { format } from 'date-fns';
@@ -73,7 +82,7 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
     try {
       onSubmit({
         title: formData.title,
-        amount: parseFloat(formData.amount),
+        amount: euroToCents(formData.amount),
         date: new Date(formData.date),
         categoryId: formData.categoryId,
         isRecurring: formData.isRecurring,
@@ -86,7 +95,7 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" data-testid="income-form">
       {generalError && (
         <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded mb-2">
           {generalError}

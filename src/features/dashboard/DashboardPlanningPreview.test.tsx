@@ -1,3 +1,26 @@
+test("clicking action button for planning intent navigates to /", async () => {
+  const mod = await import("@/planning/recommendations");
+  (mod.selectDashboardRecommendations as any).mockImplementation(() => [
+    {
+      id: "recPlanning",
+      type: "info",
+      title: "Planung ansehen",
+      reason: "Sieh dir die Planung an.",
+      evidence: {},
+      score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
+      action: { label: "Ansehen", intent: "planning" },
+    },
+  ]);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  const btn = await screen.findByRole("button", { name: /Ansehen/i });
+  fireEvent.click(btn);
+  expect(mockNavigate).toHaveBeenCalledWith("/");
+});
 test("renders and handles action button for low_income recommendation", async () => {
   const mod = await import("@/planning/recommendations");
   (mod.selectDashboardRecommendations as any).mockImplementation(() => [

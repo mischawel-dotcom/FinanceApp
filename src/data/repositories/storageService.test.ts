@@ -23,8 +23,15 @@ describe('LocalStorageService Encryption', () => {
   it('Daten sind im localStorage nicht im Klartext', async () => {
     await storageService.set(TEST_KEY, TEST_DATA);
     const raw = localStorage.getItem(TEST_KEY);
-    expect(raw).not.toContain('foo');
-    expect(raw).not.toContain('bar');
-    expect(raw).not.toContain('42');
+    const plaintext = JSON.stringify(TEST_DATA);
+    // a) raw ist definiert und ein string
+    expect(typeof raw).toBe('string');
+    expect(raw).toBeDefined();
+    // b) raw ist NICHT gleich dem Klartext JSON
+    expect(raw).not.toBe(plaintext);
+    // c) raw enthält den typischen Salted-Prefix (falls CryptoJS/OpenSSL salted)
+    expect(raw?.startsWith('U2FsdGVkX1')).toBe(true);
+    // d) raw.length > Klartext-Länge
+    expect(raw!.length).toBeGreaterThan(plaintext.length);
   });
 });

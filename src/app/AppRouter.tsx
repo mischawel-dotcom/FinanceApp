@@ -12,7 +12,7 @@ import ReportsPage from '@features/reports/ReportsPage';
 
 export default function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/FinanceApp" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AppShell>
         <Routes>
           <Route path="/" element={<DashboardPage />} />

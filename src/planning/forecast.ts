@@ -27,6 +27,9 @@ import { simulateGoalsByMonth } from '../domain/simulateGoals';
 import type { PlanInput, PlanSettings, PlanProjection, MonthKey } from './types';
 import type { Interval } from '../domain/types';
 
+// Type alias for a single month projection
+type MonthProjection = PlanProjection["timeline"][number];
+
 // Helper: get current month as MonthKey ("YYYY-MM")
 // For deterministic tests, pass settings.startMonth explicitly.
 function getCurrentMonthKey(): MonthKey {
@@ -121,23 +124,39 @@ export function buildPlanProjection(
       remainingById[id] = Math.max(0, (remainingById[id] ?? 0) - contrib);
     }
     const planned = Object.values(plannedGoalBreakdownById).reduce((sum, v) => sum + v, 0);
-    const income = incomes
-      .filter(i => (!i.startDate || month >= i.startDate) && (!i.endDate || month <= i.endDate))
+    // Recurring/normal incomes: unchanged
+    const recurringIncomeCents = incomes
+      .filter(i => {
+        const startM = i.startDate ? i.startDate.slice(0, 7) : undefined;
+        const endM = i.endDate ? i.endDate.slice(0, 7) : undefined;
+        // Exclude one-time incomes
+        const isOneTime = i.startDate && i.endDate && i.startDate === i.endDate;
+        return !isOneTime && (!startM || month >= startM) && (!endM || month <= endM);
+      })
       .reduce((sum, i) => sum + i.monthly, 0);
+    // One-time incomes: only in their month, cents-only contract
+    const oneTimeIncomeCents = input.incomes
+      .filter(i => i.startDate && i.endDate && i.startDate === i.endDate && month === i.startDate.slice(0, 7))
+      .reduce((sum, i) => sum + (typeof i.amountCents === 'number' ? i.amountCents : i.amount), 0);
+    const sumIncomeCents = recurringIncomeCents + oneTimeIncomeCents;
     const bound =
       expenses
-        .filter(e => (!e.startDate || month >= e.startDate) && (!e.endDate || month <= e.endDate))
+        .filter(e => {
+          const startM = e.startDate ? e.startDate.slice(0, 7) : undefined;
+          const endM = e.endDate ? e.endDate.slice(0, 7) : undefined;
+          return (!startM || month >= startM) && (!endM || month <= endM);
+        })
         .reduce((sum, e) => sum + e.monthly, 0)
       + reserveContrib
       + (paymentsByMonth[month] || 0);
     const invested = investContrib;
-    const free = income - bound - planned - invested;
+    const free = sumIncomeCents - bound - planned - invested;
     // DEV-only integer guards
     const assertInt = (n: number, label: string) => {
       if (!Number.isInteger(n)) throw new Error(`[forecast] ${label} must be integer cents, got ${n}`);
     };
     if (import.meta.env?.MODE !== 'production') {
-      assertInt(income, 'income');
+      assertInt(sumIncomeCents, 'income');
       assertInt(bound, 'bound');
       assertInt(planned, 'planned');
       assertInt(invested, 'invested');
@@ -146,7 +165,7 @@ export function buildPlanProjection(
     }
     timeline.push({
       month,
-      income,
+      income: sumIncomeCents,
       buckets: { bound, planned, invested, free },
       plannedGoalBreakdownById
     });

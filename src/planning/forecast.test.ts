@@ -1,3 +1,32 @@
+    it('includes one-time income only in its month, recurring in all', () => {
+      const recurringIncome: RecurringIncome = {
+        id: 'i1',
+        name: 'Salary',
+        amount: 320000,
+        interval: 'monthly',
+        confidence: 'fixed',
+        startDate: '2026-02-01',
+      };
+      const oneTimeIncome: RecurringIncome = {
+        id: 'i2',
+        name: 'Bonus',
+        amount: 80000,
+        interval: 'monthly',
+        confidence: 'fixed',
+        startDate: '2026-02-01',
+        endDate: '2026-02-01',
+      };
+      const settings: PlanSettings = { forecastMonths: 2, startMonth: '2026-02' as MonthKey };
+      const input = mkInput({ incomes: [recurringIncome, oneTimeIncome] });
+      const proj = buildPlanProjection(input, settings);
+      expect(proj.timeline).toHaveLength(2);
+      // In February, both incomes count
+      expect(proj.timeline[0].month).toBe('2026-02');
+      expect(proj.timeline[0].income).toBe(320000 + 80000);
+      // In March, only recurring income counts
+      expect(proj.timeline[1].month).toBe('2026-03');
+      expect(proj.timeline[1].income).toBe(320000);
+    });
   it('caps planned goal contributions statefully', () => {
     const settings: PlanSettings = { forecastMonths: 2, startMonth: '2026-01' as MonthKey };
     const goals = [

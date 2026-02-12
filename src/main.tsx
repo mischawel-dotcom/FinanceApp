@@ -5,6 +5,8 @@ import AppRouter from './app/AppRouter';
 import { useAppStore } from './app/store/useAppStore';
 import './index.css';
 
+console.log("[ENV_CHECK] VITE_DEBUG =", import.meta.env.VITE_DEBUG);
+
 function App() {
   const { initializeSeedData } = useAppStore();
 
@@ -14,7 +16,6 @@ function App() {
 
   return <AppRouter />;
 }
-
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

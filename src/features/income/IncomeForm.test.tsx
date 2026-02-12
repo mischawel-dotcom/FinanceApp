@@ -1,3 +1,19 @@
+  it('konvertiert Euro-Eingabe korrekt zu Integer-Cents (z.B. 4000,00 → 400000)', () => {
+    mockOnSubmit.mockClear();
+    render(<IncomeForm categories={mockCategories} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+    fireEvent.change(screen.getByLabelText(/Titel/i), { target: { value: 'Großes Einkommen' } });
+    fireEvent.change(screen.getByLabelText(/Betrag/i), { target: { value: '4000.00' } });
+    fireEvent.change(screen.getByLabelText(/Datum/i), { target: { value: '2026-02-11' } });
+    fireEvent.change(screen.getByLabelText(/Kategorie/i), { target: { value: 'default' } });
+    fireEvent.submit(screen.getByTestId('income-form'));
+    expect(mockOnSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Großes Einkommen',
+        amount: 400000,
+      })
+    );
+    // Test mit Punkt statt Komma (separater it-Test empfohlen, hier nur ein Render pro Test)
+  });
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -12,11 +28,14 @@ const mockCategories = [
 ];
 
 describe('IncomeForm UI', () => {
+  beforeEach(() => {
+    mockOnSubmit.mockClear();
+  });
   it.skip('zeigt Validierungsfehler bei leerem Submit (flaky in Testumgebung, UI validiert korrekt)', async () => {
     // HINWEIS: Die Validierung funktioniert im UI, aber der Test schlägt in der aktuellen Umgebung fehl.
     // Siehe Kommentar im Code-Review. E2E-Test empfohlen für echte Validierungsprüfung.
     render(<IncomeForm categories={mockCategories} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
-    fireEvent.click(screen.getByText(/Erstellen/i));
+    fireEvent.submit(screen.getByRole('form'));
     await new Promise((resolve) => setTimeout(resolve, 10));
     const errorElements = Array.from(document.querySelectorAll('p.text-danger-500'));
     const errorTexts = errorElements.map((el) => el.textContent?.trim() || '');
@@ -33,8 +52,9 @@ describe('IncomeForm UI', () => {
     render(<IncomeForm categories={mockCategories} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     fireEvent.change(screen.getByLabelText(/Titel/i), { target: { value: 'Test-Einkommen' } });
     fireEvent.change(screen.getByLabelText(/Betrag/i), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText(/Datum/i), { target: { value: '2026-02-11' } });
     fireEvent.change(screen.getByLabelText(/Kategorie/i), { target: { value: 'default' } });
-    fireEvent.click(screen.getByText(/Erstellen/i));
+    fireEvent.submit(screen.getByTestId('income-form'));
     expect(mockOnSubmit).toHaveBeenCalled();
   });
 

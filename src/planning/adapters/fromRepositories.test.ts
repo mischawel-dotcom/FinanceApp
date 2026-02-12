@@ -86,7 +86,7 @@ describe('fromRepositories adapter', () => {
       goals: [sampleGoal],
       assets: [],
     });
-    expect(result.incomes.length).toBe(1);
+    expect(result.incomes.length).toBe(2);
     expect(result.expenses.length).toBe(1);
     expect(result.goals.length).toBe(1);
     expect(result.investments.length).toBe(0);

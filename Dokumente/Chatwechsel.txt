@@ -1,0 +1,18 @@
+ich möchte in einem neuen Chat am Projekt weiter arbeiten.
+Der neue Chat soll Site-Fixes heissen und unter "Projekte" beheimatet sein (so wie dieser Chat.
+Bitte erstelle mir einen Prompt der den neuen Chat in die Lage versetzt, mit mir zusammen das Projekt nach den mit dir zusammen gemachten Anforderungen weiter zu entwickeln.
+Der neue Chat muss folgendes wissen:
+Was ist das Ziel des Projekts
+Welche Regeln sind zwingend einzuhalten.
+Was ist gemacht
+Wo stehen wir
+Was ist noch zu tun
+Beginnen möchte ich aber mit ein paar funktionellen Fixes auf den Seiten Einkommen und Ausgaben.
+
+Der neue Chat soll wie folgt mit mir interagieren:
+Er soll grundsätzlich nur einen einzigen Schritt vorschlagen, immer zusammen mit einem Prompt (falls Änderungen am Code zu machen sind) für Copilot der die entsprechenden Anweisungen enthält.
+Jeder Schritt muss versioniert sein. Der Prompt sollte am Anfang die Versionsnummer haben und am Ende des Prompts soll Copilot aufgefordert werden, seine Ausgabe mit der Versionsnummer zu verwenden.
+
+Solltest du noch etwas anderes als notwendig erachten das du in den Prompt für den neuen Chat packen willst, kannst du das natürlich tun.
+
+Das erste was ich im neuen Chat machen will, sind die gerade mit dir besprochenen technischen Fixes auf den beiden Seiten. (das muss aber nicht unbedingt in den Prompt, das kann ich dem Chat auch selbst mitteilen.

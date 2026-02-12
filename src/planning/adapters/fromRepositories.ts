@@ -45,19 +45,45 @@ function mapRepoGoalPriorityToDomain(p: RepoGoalPriority): DomainGoalPriority {
   }
 }
 
+
+// Map recurring incomes as before
 export function mapIncomeToDomain(i: Income): RecurringIncome | undefined {
   if (!i.isRecurring) return undefined;
-
   const interval = mapRecurrenceIntervalToInterval(i.recurrenceInterval);
-  const confidence: Confidence = 'fixed'; // MVP default
-
+  const confidence: Confidence = 'fixed';
+  let amountCents: number = 0;
+  if (typeof (i as any).amountCents === 'number' && Number.isInteger((i as any).amountCents)) {
+    amountCents = (i as any).amountCents;
+  } else if (typeof i.amount === 'number') {
+    amountCents = Math.round(i.amount * 100);
+  }
   return {
     id: i.id,
     name: i.title,
-    amount: i.amount,
+    amount: amountCents,
     interval,
     confidence,
     startDate: toIsoDate(i.date),
+    note: i.notes,
+  };
+}
+
+// Map one-time incomes to RecurringIncome for the correct month only
+function mapOneTimeIncomeToDomain(i: Income): RecurringIncome {
+  let amountCents: number = 0;
+  if (typeof (i as any).amountCents === 'number' && Number.isInteger((i as any).amountCents)) {
+    amountCents = (i as any).amountCents;
+  } else if (typeof i.amount === 'number') {
+    amountCents = Math.round(i.amount * 100);
+  }
+  return {
+    id: i.id,
+    name: i.title,
+    amount: amountCents,
+    interval: 'monthly',
+    confidence: 'fixed',
+    startDate: toIsoDate(i.date),
+    endDate: toIsoDate(i.date),
     note: i.notes,
   };
 }
@@ -105,10 +131,18 @@ export function buildPlanInputFromRepoData(args: {
   goals: FinancialGoal[];
   assets: Asset[];
 }): PlanInput {
-  const incomes = args.incomes
+  // Recurring incomes as before
+  const recurringIncomes = args.incomes
+    .filter(i => i.isRecurring)
     .map(mapIncomeToDomain)
     .filter((x): x is RecurringIncome => Boolean(x));
 
+  // One-time incomes: only for their month
+  const oneTimeIncomes = args.incomes
+    .filter(i => !i.isRecurring)
+    .map(mapOneTimeIncomeToDomain);
+
+  const incomes = [...recurringIncomes, ...oneTimeIncomes];
   const expenses = args.expenses.map(mapExpenseToDomain);
   const goals = args.goals.map(mapGoalToDomain);
   const investments = args.assets.map(mapAssetToInvestmentPlan);

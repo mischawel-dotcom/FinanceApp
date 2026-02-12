@@ -46,6 +46,8 @@ export interface RecurringIncome {
   startDate?: IsoDate;
   endDate?: IsoDate;
   note?: string;
+  // Optional: used by forecast logic
+  amountCents?: number;
 }
 
 /**
@@ -100,6 +102,11 @@ export interface Goal {
   flexibility?: 'flexible' | 'medium' | 'strict';
   monthlyContribution?: Money;
   note?: string;
+  // Optional: used by forecast logic
+  goalId?: string;
+  targetAmountCents?: number;
+  currentAmountCents?: number;
+  monthlyContributionCents?: number;
 }
 
 /**
