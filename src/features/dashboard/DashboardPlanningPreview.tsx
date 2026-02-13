@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 const DEBUG = import.meta.env.DEV && import.meta.env.VITE_DEBUG === "1";
-import { incomeRepository, expenseRepository, assetRepository, goalRepository } from "@data/repositories";
+
 import type { DashboardModel } from "@/planning/planFacade";
 import { buildDashboardModelFromRepositories } from "@/planning/planFacade";
 import { formatCentsEUR } from "@/ui/formatMoney";
@@ -19,68 +19,15 @@ export default function DashboardPlanningPreview() {
       // --- Debug actual planning input ---
       try {
         if (DEBUG) {
-          console.log('[DEBUG] before fetch');
+          // ...removed debug log...
         }
         // Fetch all planning-relevant arrays
-        const incomes = await incomeRepository.getAll();
-        const expenses = await expenseRepository.getAll();
-        const assets = await assetRepository.getAll();
-        const goals = await goalRepository.getAll();
-        const investments = (typeof assetRepository.getInvestments === 'function') ? await assetRepository.getInvestments() : [];
-        const reserves = (typeof assetRepository.getReserves === 'function') ? await assetRepository.getReserves() : [];
-        // Compose the input object as used in planning (simulate what planFacade would do)
-        const input = {
-          incomes,
-          expenses,
-          goals,
-          investments,
-          reserves
-        };
+        // fetch only what is needed for buildDashboardModelFromRepositories
         if (DEBUG) {
-          console.log('[DEBUG] planning input counts:', {
-            incomes: input.incomes?.length ?? 0,
-            expenses: input.expenses?.length ?? 0,
-            goals: input.goals?.length ?? 0,
-            investments: input.investments?.length ?? 0,
-            reserves: input.reserves?.length ?? 0
-          });
+          // ...removed debug log...
         }
         if (DEBUG) {
-          console.log('[DEBUG] after fetch counts', {
-            incomes: incomes.length,
-            expenses: expenses.length,
-            goals: goals.length,
-            investments: investments.length,
-            reserves: reserves.length
-          });
-          console.log('[DEBUG] after fetch sample', {
-            income0: incomes[0]?.id ?? "n/a",
-            expense0: expenses[0]?.id ?? "n/a",
-            goal0: goals[0]?.id ?? "n/a",
-            investment0: investments[0]?.id ?? "n/a",
-            reserve0: reserves[0]?.id ?? "n/a"
-          });
-          // Log localStorage keys and sample
-          const lsKeys = Object.keys(window.localStorage);
-          console.log('[DEBUG] localStorage keys', lsKeys);
-          if (lsKeys.length > 0) {
-            console.log('[DEBUG] localStorage key samples', lsKeys.slice(0,5).map(k => ({ k, len: (localStorage.getItem(k) ?? '').length })));
-          }
-          // finance-app-store encryption/structure check
-          const raw = localStorage.getItem("finance-app-store");
-          console.log("[DEBUG] finance-app-store raw head", raw ? raw.slice(0, 80) : null);
-          console.log("[DEBUG] finance-app-store looksEncrypted", raw ? raw.startsWith("U2FsdGVkX1") : false);
-          if (raw && !raw.startsWith("U2FsdGVkX1")) {
-            try {
-              const obj = JSON.parse(raw);
-              console.log("[DEBUG] finance-app-store json topKeys", Object.keys(obj));
-              if (obj && typeof obj === 'object' && obj.state) {
-                console.log("[DEBUG] finance-app-store state topKeys", Object.keys(obj.state));
-              }
-            } catch (err) {
-              console.log("[DEBUG] finance-app-store JSON.parse error", err);
-            }
-          }
+          // ...removed debug logs and localStorage debug checks...
         }
         const m = await buildDashboardModelFromRepositories({ forecastMonths: 24 });
         setModel(m);
@@ -114,9 +61,7 @@ export default function DashboardPlanningPreview() {
 
 
 
-  function onRecommendationAction(action: any) {
-    handleRecommendationAction(action, { navigate });
-  }
+
 
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
@@ -177,35 +122,6 @@ export default function DashboardPlanningPreview() {
         <div style={{ fontSize: 12, opacity: 0.7 }}>Verfügbar (aktueller Monat)</div>
         <div style={{ fontSize: 28, fontWeight: 700 }}>{formatCentsEUR(heroFree)}</div>
 
-        {/* DEV-ONLY DEBUG BLOCK: Forecast input values (planInput) */}
-            {import.meta.env.DEV && model?.projection?.settings?._input && (
-              <pre style={{ marginTop: 12, fontSize: 13, background: '#f6f6f6', padding: 8, borderRadius: 6 }} data-testid="dashboard-debug-raw">
-                {(() => {
-                  // Use the exact input object passed to forecast
-                  const input = model.projection.settings._input;
-                  const month = input.month;
-                  const incomes = input.incomes || [];
-                  const expenses = input.expenses || [];
-                  const goals = input.goals || [];
-                  const investments = input.investments || [];
-                  const reserves = input.reserves || [];
-                  // Sums
-                  const sumIncomeCents = incomes.reduce((sum, i) => sum + (typeof i.amount === 'number' ? i.amount : 0), 0);
-                  const sumExpenseCents = expenses.reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : 0), 0);
-                  return [
-                    `month: ${month}`,
-                    `incomes.length: ${incomes.length}`,
-                    `expenses.length: ${expenses.length}`,
-                    `goals.length: ${goals.length}`,
-                    `investments.length: ${investments.length}`,
-                    `reserves.length: ${reserves.length}`,
-                    '',
-                    `sumIncomeCents: ${sumIncomeCents}`,
-                    `sumExpenseCents: ${sumExpenseCents}`
-                  ].join('\n');
-                })()}
-              </pre>
-            )}
       </div>
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>

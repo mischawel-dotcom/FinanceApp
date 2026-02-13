@@ -3,6 +3,13 @@ import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { useEffect } from 'react';
+import { formatCentsEUR } from '@/ui/formatMoney';
+
+const normalizeCents = (amountCents: unknown, amount: unknown) => {
+  if (typeof amountCents === 'number' && Number.isFinite(amountCents)) return Math.round(amountCents);
+  if (typeof amount === 'number' && Number.isFinite(amount)) return Math.round(amount); // amount ist bei uns bereits cents im Store
+  return 0;
+};
 
 export default function DashboardPage() {
   const { incomes, expenses, assets, goals, incomeCategories, expenseCategories, loadData } = useAppStore();
@@ -104,25 +111,25 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <div className="text-sm text-gray-600 mb-1">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600">+{totalIncome.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-success-600">+{formatCentsEUR(totalIncome)}</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600">-{totalExpenses.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-danger-600">-{formatCentsEUR(totalExpenses)}</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Saldo (Monat)</div>
           <div className={`text-2xl font-bold ${balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {balance >= 0 ? '+' : ''}{balance.toFixed(2)} €
+            {balance >= 0 ? '+' : ''}{formatCentsEUR(balance)}
           </div>
           <div className="text-xs text-gray-500 mt-1">Sparquote: {savingsRate}%</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Vermögen</div>
-          <div className="text-2xl font-bold text-gray-900">{totalAssetValue.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValue)}</div>
           {assetGain !== 0 && (
             <div className={`text-xs mt-1 ${assetGain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {assetGain >= 0 ? '+' : ''}{assetGain.toFixed(2)} € Gewinn
+              {assetGain >= 0 ? '+' : ''}{formatCentsEUR(assetGain)} Gewinn
             </div>
           )}
         </Card>
@@ -145,7 +152,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className={`font-semibold ${txn.type === 'income' ? 'text-success-600' : 'text-danger-600'}`}>
-                    {txn.type === 'income' ? '+' : '-'}{txn.amount.toFixed(2)} €
+                    {txn.type === 'income' ? '+' : '-'}{formatCentsEUR(normalizeCents(txn.amountCents, txn.amount))}
                   </div>
                 </div>
               ))}
@@ -171,7 +178,7 @@ export default function DashboardPage() {
                         />
                         <span className="text-sm font-medium text-gray-900">{cat.category}</span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-900">{cat.total.toFixed(2)} €</span>
+                      <span className="text-sm font-semibold text-gray-900">{formatCentsEUR(cat.total)}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div
@@ -203,7 +210,7 @@ export default function DashboardPage() {
                 <div key={goal.id} className="p-4 bg-gray-50 rounded-lg">
                   <div className="font-semibold text-gray-900 mb-2">{goal.name}</div>
                   <div className="text-sm text-gray-600 mb-2">
-                    {goal.currentAmount.toFixed(2)} € / {goal.targetAmount.toFixed(2)} €
+                    {formatCentsEUR(goal.currentAmount)} / {formatCentsEUR(goal.targetAmount)}
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-1">
                     <div
@@ -228,7 +235,7 @@ export default function DashboardPage() {
             <div>
               <div className="text-sm text-gray-600">Gesamt-Zielfortschritt</div>
               <div className="text-2xl font-bold text-gray-900 mt-1">
-                {totalGoalCurrent.toFixed(2)} € / {totalGoalTarget.toFixed(2)} €
+                {formatCentsEUR(totalGoalCurrent)} / {formatCentsEUR(totalGoalTarget)}
               </div>
             </div>
             <div className="text-right">

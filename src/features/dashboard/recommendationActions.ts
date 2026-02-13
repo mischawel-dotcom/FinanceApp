@@ -1,3 +1,9 @@
+// Vite: Window-Erweiterung für __warnedUnknownRecActions
+declare global {
+  interface Window {
+    __warnedUnknownRecActions?: Set<string>;
+  }
+}
 export type RecommendationActionKind =
   | "open_planning"
   | "open_goal"
@@ -20,7 +26,7 @@ export function handleRecommendationAction(
     let url = action.payload.path;
     if (action.payload.query && typeof action.payload.query === "object") {
       const params = Object.entries(action.payload.query)
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
         .join("&");
       if (params) url += `?${params}`;
     }
@@ -65,7 +71,7 @@ export function handleRecommendationAction(
           let url = action.payload.path;
           if (action.payload.query && typeof action.payload.query === "object") {
             const params = Object.entries(action.payload.query)
-              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
               .join("&");
             if (params) url += `?${params}`;
           }
@@ -74,12 +80,11 @@ export function handleRecommendationAction(
         }
       }
       // DEV: warn once per unknown action type
-      if (process.env.NODE_ENV === "development") {
+      if (import.meta.env.DEV) {
         if (!window.__warnedUnknownRecActions) window.__warnedUnknownRecActions = new Set();
         const key = action && (action.kind || action.intent || typeof action);
         if (!window.__warnedUnknownRecActions.has(key)) {
-          // eslint-disable-next-line no-console
-          console.warn("Unknown recommendation action", key, action);
+          // ...removed debug log...
           window.__warnedUnknownRecActions.add(key);
         }
       }

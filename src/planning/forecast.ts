@@ -1,6 +1,5 @@
-function toCents(centsValue: unknown, euroValue: unknown): number {
-  if (typeof centsValue === "number" && Number.isFinite(centsValue)) return Math.round(centsValue);
-  if (typeof euroValue === "number" && Number.isFinite(euroValue)) return Math.round(euroValue * 100);
+export function toCents(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.round(value);
   return 0;
 }
 import { simulateGoalsByMonth } from '../domain/simulateGoals';
@@ -99,8 +98,8 @@ export function buildPlanProjection(
   const remainingById: Record<string, number> = {};
   for (const goal of goals) {
     const id = (goal.goalId ?? goal.id) as string;
-    const targetCents = toCents(goal.targetAmountCents, goal.targetAmount);
-    const currentCents = toCents(goal.currentAmountCents, goal.currentAmount);
+    const targetCents = toCents(goal.targetAmountCents ?? goal.targetAmount);
+    const currentCents = toCents(goal.currentAmountCents ?? goal.currentAmount);
     remainingById[id] = Math.max(0, targetCents - currentCents);
   }
 
@@ -116,7 +115,7 @@ export function buildPlanProjection(
     const plannedGoalBreakdownById: Record<string, number> = {};
     for (const goal of goals) {
       const id = (goal.goalId ?? goal.id) as string;
-      const rateCents = toCents(goal.monthlyContributionCents, goal.monthlyContribution);
+      const rateCents = toCents(goal.monthlyContributionCents ?? goal.monthlyContribution);
       const contrib = Math.min(rateCents, remainingById[id] ?? 0);
       if (contrib > 0) {
         plannedGoalBreakdownById[id] = contrib;

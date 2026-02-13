@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import type { Income } from '../../shared/types';
 import { persist } from 'zustand/middleware';
 import {
   seedIncomeCategories,
@@ -60,9 +61,9 @@ interface AppStore {
   createIncomeCategory: () => Promise<void>;
   updateIncomeCategory: () => Promise<void>;
   deleteIncomeCategory: () => Promise<void>;
-  createIncome: () => Promise<void>;
-  updateIncome: () => Promise<void>;
-  deleteIncome: () => Promise<void>;
+  createIncome: (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateIncome: (payload: any) => Promise<void>;
+  deleteIncome: (id: string) => Promise<void>;
   createExpenseCategory: () => Promise<void>;
   updateExpenseCategory: () => Promise<void>;
   deleteExpenseCategory: () => Promise<void>;
@@ -96,7 +97,7 @@ export const useAppStore = create<AppStore>()(
       // Actions: Nur leere async-Methoden (Stubs)
       loadData: async () => {},
       initializeSeedData: async () => {
-        // Nur ausführen, wenn Store leer ist
+        // Deaktiviert: keine Demo-Incomes mehr beim Start
         const state = get();
         if (
           state.incomeCategories.length === 0 &&
@@ -109,19 +110,91 @@ export const useAppStore = create<AppStore>()(
           set({
             incomeCategories: seedIncomeCategories.map((cat, i) => ({ ...cat, id: `incat${i}` })),
             expenseCategories: seedExpenseCategories.map((cat, i) => ({ ...cat, id: `excat${i}` })),
-            incomes: seedIncomes.map((inc, i) => ({ ...inc, id: `inc${i}` })),
+            incomes: [], // Keine Demo-Incomes mehr
             expenses: seedExpenses.map((exp, i) => ({ ...exp, id: `exp${i}` })),
             assets: seedAssets.map((asset, i) => ({ ...asset, id: `asset${i}` })),
             goals: seedGoals.map((goal, i) => ({ ...goal, id: `goal${i}` })),
           });
         }
       },
-      createIncomeCategory: async () => {},
+      createIncomeCategory: async () => {
+        const state = get();
+        if (state.incomeCategories.length === 0) {
+          // Lege alle Default-Kategorien an
+          const now = new Date();
+          const categories = seedIncomeCategories.map((cat, i) => ({
+            ...cat,
+            id: `incat${i}_${Date.now()}`,
+            createdAt: now,
+            updatedAt: now,
+          }));
+          set({ incomeCategories: categories });
+        } else {
+          // Füge wie bisher eine Einzelkategorie hinzu (optional, falls gewünscht)
+          const newCategory = {
+            id: `incat${Date.now()}`,
+            name: 'Gehalt',
+            description: 'Standardkategorie',
+            color: '#4F46E5',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          set({ incomeCategories: [...state.incomeCategories, newCategory] });
+        }
+      },
       updateIncomeCategory: async () => {},
       deleteIncomeCategory: async () => {},
-      createIncome: async () => {},
-      updateIncome: async () => {},
-      deleteIncome: async () => {},
+      createIncome: async (payload: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => {
+        // amount is always cents (integer)
+        const newIncome: Income = {
+          ...payload,
+          amount: payload.amount,
+          amountCents: payload.amount, // legacy mirror
+          id: `inc${Date.now()}`,
+          date: payload.date instanceof Date ? payload.date : new Date(payload.date),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        set((state) => {
+          const incomes = [...state.incomes, newIncome];
+          return { incomes };
+        });
+      },
+      updateIncome: async (payload: any) => {
+        if (!payload?.id) return;
+
+        set((state) => {
+          const incomes = state.incomes.map((i) => {
+            if (i.id !== payload.id) return i;
+
+            const nextAmount =
+              typeof payload.amount === 'number' && Number.isFinite(payload.amount)
+                ? Math.round(payload.amount) // already cents
+                : i.amount;
+
+            const nextDate =
+              payload.date != null
+                ? payload.date instanceof Date
+                  ? payload.date
+                  : new Date(payload.date)
+                : i.date;
+
+            return {
+              ...i,
+              ...payload,
+              amount: nextAmount,
+              amountCents: nextAmount, // legacy mirror
+              date: nextDate,
+              updatedAt: new Date(),
+            };
+          });
+
+          return { incomes };
+        });
+      },
+      deleteIncome: async (id: string) => {
+        set((state) => ({ incomes: state.incomes.filter((i) => i.id !== id) }));
+      },
       createExpenseCategory: async () => {},
       updateExpenseCategory: async () => {},
       deleteExpenseCategory: async () => {},

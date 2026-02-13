@@ -81,9 +81,7 @@ export async function buildDashboardModelFromRepositories(
       isInt_monthlyAmount: Number.isInteger((e as any).monthlyAmount),
     }));
     // eslint-disable-next-line no-console
-    console.error('[DEBUG_CENTS_INPUT] incomes', debugIncomes);
-    // eslint-disable-next-line no-console
-    console.error('[DEBUG_CENTS_INPUT] expenses', debugExpenses);
+    // ...removed debug logs...
   }
   const projection = buildPlanProjection(planInput, settings);
   const domainGoals: Goal[] = planInput.goals;

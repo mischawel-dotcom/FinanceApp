@@ -30,9 +30,17 @@ const recurrenceOptions: { value: RecurrenceInterval; label: string }[] = [
 ];
 
 export function IncomeForm({ initialData, categories, onSubmit, onCancel }: IncomeFormProps) {
+  // Prefill amount as EUR string if editing
+  const initialCents = typeof initialData?.amount === 'number' && Number.isFinite(initialData.amount)
+    ? initialData.amount
+    : undefined;
+  const amountStr =
+    typeof initialCents === 'number' && Number.isFinite(initialCents)
+      ? (initialCents / 100).toFixed(2)
+      : '';
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    amount: initialData?.amount?.toString() || '',
+    amount: amountStr,
     date: initialData?.date ? format(initialData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     categoryId: initialData?.categoryId || (categories[0]?.id || ''),
     isRecurring: initialData?.isRecurring || false,
@@ -80,15 +88,20 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
     setGeneralError(null);
     if (!validate()) return;
     try {
-      onSubmit({
+      const amountCents =
+        typeof formData.amount === "number"
+          ? Math.round(formData.amount)
+          : euroToCents(formData.amount);
+      const payload = {
         title: formData.title,
-        amount: euroToCents(formData.amount),
+        amount: amountCents,
         date: new Date(formData.date),
         categoryId: formData.categoryId,
         isRecurring: formData.isRecurring,
         recurrenceInterval: formData.isRecurring ? formData.recurrenceInterval : undefined,
         notes: formData.notes || undefined,
-      });
+      };
+      onSubmit(payload);
     } catch (err: any) {
       setGeneralError(err?.message || 'Unbekannter Fehler beim Speichern');
     }

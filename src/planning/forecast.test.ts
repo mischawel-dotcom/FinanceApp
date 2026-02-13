@@ -33,9 +33,9 @@
       {
         id: 'g1',
         name: 'TestGoal',
-        targetAmount: 1.00,
-        currentAmount: 0.90,
-        monthlyContribution: 0.50,
+        targetAmount: 100,
+        currentAmount: 90,
+        monthlyContribution: 50,
         priority: 1,
       },
     ];

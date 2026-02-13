@@ -7,6 +7,47 @@ import { IncomeCategoryForm } from './IncomeCategoryForm';
 import { IncomeForm } from './IncomeForm';
 
 export default function IncomePage() {
+    // incomeColumns: define here so it is available for Table
+    const incomeColumns = [
+      { key: 'date', label: 'Datum', render: (inc: Income) => format(inc.date, 'dd.MM.yyyy') },
+      { key: 'title', label: 'Titel' },
+      {
+        key: 'amount',
+        label: 'Betrag',
+        render: (inc: Income) => {
+          const euros = inc.amount / 100;
+          return (
+            <span className="font-semibold text-success-600">
+              {euros.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            </span>
+          );
+        }
+      },
+      { key: 'category', label: 'Kategorie', render: (inc: Income) => getCategoryName(inc.categoryId) },
+      {
+        key: 'recurring',
+        label: 'Wiederkehrend',
+        render: (inc: Income) => (
+          <span className={`px-2 py-1 text-xs rounded-full ${inc.isRecurring ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+            {inc.isRecurring ? 'Ja' : 'Nein'}
+          </span>
+        )
+      },
+      {
+        key: 'actions',
+        label: 'Aktionen',
+        render: (inc: Income) => (
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => openEditIncomeModal(inc)}>
+              Bearbeiten
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => handleDeleteIncome(inc.id)}>
+              Löschen
+            </Button>
+          </div>
+        )
+      }
+    ];
   const { 
     incomeCategories, 
     incomes, 
@@ -18,6 +59,7 @@ export default function IncomePage() {
     deleteIncome,
     loadData
   } = useAppStore();
+
 
   useEffect(() => {
     if (incomeCategories.length === 0 || incomes.length === 0) {
@@ -62,22 +104,21 @@ export default function IncomePage() {
   };
 
   // Income Handlers
-  const handleCreateIncome = async () => {
-    await createIncome();
+  const handleCreateIncome = async (payload: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => {
+    await createIncome(payload);
     setIsIncomeModalOpen(false);
   };
 
-  const handleUpdateIncome = async () => {
-    if (editingIncome) {
-      await updateIncome();
-      setEditingIncome(null);
-      setIsIncomeModalOpen(false);
-    }
+  const handleUpdateIncome = async (payload: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingIncome) return;
+    await updateIncome({ ...payload, id: editingIncome.id });
+    setEditingIncome(null);
+    setIsIncomeModalOpen(false);
   };
 
-  const handleDeleteIncome = async () => {
+  const handleDeleteIncome = async (incomeId: string) => {
     if (confirm('Einnahme wirklich löschen?')) {
-      await deleteIncome();
+      await deleteIncome(incomeId);
     }
   };
 
@@ -86,7 +127,10 @@ export default function IncomePage() {
     setIsIncomeModalOpen(true);
   };
 
-  const openCreateIncomeModal = () => {
+  const openCreateIncomeModal = async () => {
+    if (incomeCategories.length === 0) {
+      await createIncomeCategory();
+    }
     setEditingIncome(null);
     setIsIncomeModalOpen(true);
   };
@@ -107,58 +151,6 @@ export default function IncomePage() {
         <div className="flex items-center gap-2">
           {cat.color && <div className="w-6 h-6 rounded" style={{ backgroundColor: cat.color }} />}
           {cat.color || '-'}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Aktionen',
-      render: (cat: IncomeCategory) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openEditCategoryModal(cat)}>
-            Bearbeiten
-          </Button>
-          <Button size="sm" variant="danger" onClick={handleDeleteCategory}>
-            Löschen
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const incomeColumns = [
-    { key: 'date', label: 'Datum', render: (inc: Income) => format(inc.date, 'dd.MM.yyyy') },
-    { key: 'title', label: 'Titel' },
-    { 
-      key: 'amount', 
-      label: 'Betrag', 
-      render: (inc: Income) => (
-        <span className="font-semibold text-success-600">
-          {inc.amount.toFixed(2)} €
-        </span>
-      )
-    },
-    { key: 'category', label: 'Kategorie', render: (inc: Income) => getCategoryName(inc.categoryId) },
-    { 
-      key: 'recurring', 
-      label: 'Wiederkehrend', 
-      render: (inc: Income) => (
-        <span className={`px-2 py-1 text-xs rounded-full ${inc.isRecurring ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-          {inc.isRecurring ? 'Ja' : 'Nein'}
-        </span>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Aktionen',
-      render: (inc: Income) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openEditIncomeModal(inc)}>
-            Bearbeiten
-          </Button>
-          <Button size="sm" variant="danger" onClick={handleDeleteIncome}>
-            Löschen
-          </Button>
         </div>
       ),
     },

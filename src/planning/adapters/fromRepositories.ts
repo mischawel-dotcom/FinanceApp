@@ -51,12 +51,7 @@ export function mapIncomeToDomain(i: Income): RecurringIncome | undefined {
   if (!i.isRecurring) return undefined;
   const interval = mapRecurrenceIntervalToInterval(i.recurrenceInterval);
   const confidence: Confidence = 'fixed';
-  let amountCents: number = 0;
-  if (typeof (i as any).amountCents === 'number' && Number.isInteger((i as any).amountCents)) {
-    amountCents = (i as any).amountCents;
-  } else if (typeof i.amount === 'number') {
-    amountCents = Math.round(i.amount * 100);
-  }
+  const amountCents = typeof i.amount === 'number' ? Math.round(i.amount) : 0;
   return {
     id: i.id,
     name: i.title,
@@ -70,12 +65,7 @@ export function mapIncomeToDomain(i: Income): RecurringIncome | undefined {
 
 // Map one-time incomes to RecurringIncome for the correct month only
 function mapOneTimeIncomeToDomain(i: Income): RecurringIncome {
-  let amountCents: number = 0;
-  if (typeof (i as any).amountCents === 'number' && Number.isInteger((i as any).amountCents)) {
-    amountCents = (i as any).amountCents;
-  } else if (typeof i.amount === 'number') {
-    amountCents = Math.round(i.amount * 100);
-  }
+  const amountCents = typeof i.amount === 'number' ? Math.round(i.amount) : 0;
   return {
     id: i.id,
     name: i.title,

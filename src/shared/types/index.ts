@@ -57,6 +57,7 @@ export interface Income {
   id: string;
   title: string;
   amount: number;
+  amountCents?: number;
   date: Date;
   categoryId: string;
   isRecurring: boolean;

@@ -19,10 +19,15 @@ import type {
 // ==================== KATEGORIEN ====================
 
 export const seedIncomeCategories: Omit<IncomeCategory, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Gehalt', description: 'Monatliches Gehalt', color: '#10b981' },
-  { name: 'Freelancing', description: 'Freiberufliche Einkünfte', color: '#3b82f6' },
-  { name: 'Investitionen', description: 'Dividenden, Zinsen', color: '#8b5cf6' },
-  { name: 'Sonstiges', description: 'Andere Einnahmen', color: '#6b7280' },
+  { name: "Gehalt", description: "Monatliches Haupteinkommen", color: "#2563eb" },
+  { name: "Nebeneinkommen", description: "Nebenjob oder zusätzliche Tätigkeit", color: "#16a34a" },
+  { name: "Freelance / Selbständig", description: "Projektbasierte oder selbständige Tätigkeit", color: "#0ea5e9" },
+  { name: "Bonus / Prämie", description: "Einmalige Bonuszahlungen", color: "#f59e0b" },
+  { name: "Kapitalerträge", description: "Zinsen oder Dividenden", color: "#7c3aed" },
+  { name: "Mieteinnahmen", description: "Einnahmen aus Vermietung", color: "#0891b2" },
+  { name: "Erstattung / Rückzahlung", description: "Rückerstattungen oder Gutschriften", color: "#059669" },
+  { name: "Geschenk / Unterstützung", description: "Erhaltene finanzielle Unterstützung", color: "#db2777" },
+  { name: "Sonstiges", description: "Sonstige externe Einnahmen", color: "#6b7280" }
 ];
 
 export const seedExpenseCategories: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>[] = [
