@@ -1,12 +1,4 @@
-// Helper: parse euro string (with dot or comma) to integer cents
-function euroToCents(val: string): number {
-  if (!val) return 0;
-  // Replace comma with dot, remove spaces
-  const normalized = val.replace(/\s+/g, '').replace(',', '.');
-  const floatVal = parseFloat(normalized);
-  if (isNaN(floatVal)) return 0;
-  return Math.round(floatVal * 100);
-}
+import { euroInputToCents, centsToEuroInput } from '@/shared/utils/money';
 import { useState, FormEvent } from 'react';
 import { z, ZodIssue } from 'zod';
 import { format } from 'date-fns';
@@ -31,12 +23,9 @@ const recurrenceOptions: { value: RecurrenceInterval; label: string }[] = [
 
 export function IncomeForm({ initialData, categories, onSubmit, onCancel }: IncomeFormProps) {
   // Prefill amount as EUR string if editing
-  const initialCents = typeof initialData?.amount === 'number' && Number.isFinite(initialData.amount)
-    ? initialData.amount
-    : undefined;
   const amountStr =
-    typeof initialCents === 'number' && Number.isFinite(initialCents)
-      ? (initialCents / 100).toFixed(2)
+    typeof initialData?.amount === 'number' && Number.isFinite(initialData.amount)
+      ? centsToEuroInput(initialData.amount)
       : '';
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
@@ -88,10 +77,7 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
     setGeneralError(null);
     if (!validate()) return;
     try {
-      const amountCents =
-        typeof formData.amount === "number"
-          ? Math.round(formData.amount)
-          : euroToCents(formData.amount);
+      const amountCents = euroInputToCents(formData.amount);
       const payload = {
         title: formData.title,
         amount: amountCents,

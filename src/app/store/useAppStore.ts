@@ -56,6 +56,7 @@ interface AppStore {
 
   // Actions (nur Stubs)
   // Actions (nur Signaturen)
+  ensureReferenceData: () => void;
   loadData: () => Promise<void>;
   initializeSeedData: () => Promise<void>;
   createIncomeCategory: () => Promise<void>;
@@ -67,9 +68,9 @@ interface AppStore {
   createExpenseCategory: () => Promise<void>;
   updateExpenseCategory: () => Promise<void>;
   deleteExpenseCategory: () => Promise<void>;
-  createExpense: () => Promise<void>;
-  updateExpense: () => Promise<void>;
-  deleteExpense: () => Promise<void>;
+  createExpense: (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateExpense: (payload: any) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
   createAsset: () => Promise<void>;
   updateAsset: () => Promise<void>;
   deleteAsset: () => Promise<void>;
@@ -93,29 +94,44 @@ export const useAppStore = create<AppStore>()(
       recommendations: [],
       isLoading: true,
       error: null,
-
-      // Actions: Nur leere async-Methoden (Stubs)
-      loadData: async () => {},
-      initializeSeedData: async () => {
-        // Deaktiviert: keine Demo-Incomes mehr beim Start
+      ensureReferenceData: () => {
         const state = get();
-        if (
-          state.incomeCategories.length === 0 &&
-          state.expenseCategories.length === 0 &&
-          state.incomes.length === 0 &&
-          state.expenses.length === 0 &&
-          state.assets.length === 0 &&
-          state.goals.length === 0
-        ) {
+        const now = new Date();
+
+        if (state.incomeCategories.length === 0) {
           set({
-            incomeCategories: seedIncomeCategories.map((cat, i) => ({ ...cat, id: `incat${i}` })),
-            expenseCategories: seedExpenseCategories.map((cat, i) => ({ ...cat, id: `excat${i}` })),
-            incomes: [], // Keine Demo-Incomes mehr
-            expenses: seedExpenses.map((exp, i) => ({ ...exp, id: `exp${i}` })),
-            assets: seedAssets.map((asset, i) => ({ ...asset, id: `asset${i}` })),
-            goals: seedGoals.map((goal, i) => ({ ...goal, id: `goal${i}` })),
+            incomeCategories: seedIncomeCategories.map((cat: any) => ({
+              id: cat.id ?? `inc_${cat.name.toLowerCase().replace(/\s+/g, "_")}`,
+              name: cat.name,
+              description: cat.description,
+              color: cat.color,
+              createdAt: now,
+              updatedAt: now,
+            })),
           });
         }
+
+        if (state.expenseCategories.length === 0) {
+          set({
+            expenseCategories: seedExpenseCategories.map((cat: any) => ({
+              id: cat.id,
+              name: cat.name,
+              description: cat.description,
+              color: cat.color,
+              importance: cat.importance,
+              createdAt: now,
+              updatedAt: now,
+            })),
+          });
+        }
+      },
+
+      // Actions: Nur leere async-Methoden (Stubs)
+      loadData: async () => {
+        get().ensureReferenceData();
+      },
+      initializeSeedData: async () => {
+        get().ensureReferenceData();
       },
       createIncomeCategory: async () => {
         const state = get();
@@ -198,9 +214,54 @@ export const useAppStore = create<AppStore>()(
       createExpenseCategory: async () => {},
       updateExpenseCategory: async () => {},
       deleteExpenseCategory: async () => {},
-      createExpense: async () => {},
-      updateExpense: async () => {},
-      deleteExpense: async () => {},
+      createExpense: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
+        const now = new Date();
+        const date = payload.date instanceof Date ? payload.date : new Date(payload.date);
+        const amount = Number.isFinite(payload.amount) ? Math.round(payload.amount) : 0;
+        const newExpense = {
+          ...payload,
+          id: `exp${Date.now()}`,
+          date,
+          amount,
+          amountCents: amount, // legacy mirror
+          isRecurring: !!payload.isRecurring,
+          recurrenceInterval: payload.isRecurring ? payload.recurrenceInterval : undefined,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((state) => ({
+          expenses: [...state.expenses, newExpense],
+        }));
+      },
+      updateExpense: async (payload: any) => {
+        if (!payload?.id) return;
+        set((state) => ({
+          expenses: state.expenses.map((e: any) => {
+            if (e.id !== payload.id) return e;
+            const nextAmount =
+              typeof payload.amount === 'number' && Number.isFinite(payload.amount)
+                ? Math.round(payload.amount) // already cents
+                : e.amount;
+            const nextDate =
+              payload.date != null
+                ? (payload.date instanceof Date ? payload.date : new Date(payload.date))
+                : e.date;
+            return {
+              ...e,
+              ...payload,
+              amount: nextAmount,
+              amountCents: nextAmount, // legacy mirror
+              date: nextDate,
+              isRecurring: !!payload.isRecurring,
+              recurrenceInterval: payload.isRecurring ? payload.recurrenceInterval : undefined,
+              updatedAt: new Date(),
+            };
+          }),
+        }));
+      },
+      deleteExpense: async (id: string) => {
+        set((state) => ({ expenses: state.expenses.filter((e: any) => e.id !== id) }));
+      },
       createAsset: async () => {},
       updateAsset: async () => {},
       deleteAsset: async () => {},

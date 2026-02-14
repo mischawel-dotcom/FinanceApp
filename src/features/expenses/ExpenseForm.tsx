@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import { euroInputToCents, centsToEuroInput } from '@/shared/utils/money';
 import { format } from 'date-fns';
 import type { Expense, ExpenseCategory, ImportanceLevel } from '../../shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
@@ -6,7 +7,7 @@ import { Button, Input, Select, Textarea } from '@shared/components';
 interface ExpenseFormProps {
   initialData?: Expense;
   categories: ExpenseCategory[];
-  onSubmit: (data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSubmit: (data: any) => void; // Accepts both create and update payloads
   onCancel: () => void;
 }
 
@@ -22,12 +23,24 @@ const importanceOptions = [
 export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: ExpenseFormProps) {
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    amount: initialData?.amount?.toString() || '',
+    amount: initialData?.amount != null ? centsToEuroInput(initialData.amount) : '',
     date: initialData?.date ? format(initialData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     categoryId: initialData?.categoryId || (categories[0]?.id || ''),
     importance: (initialData?.importance?.toString() || '3') as string,
     notes: initialData?.notes || '',
+    isRecurring: initialData?.isRecurring ?? false,
+    recurrenceInterval: initialData?.recurrenceInterval ?? 'monthly',
   });
+
+  // Update formData.amount if initialData changes (for edit modal)
+  useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        amount: initialData.amount != null ? centsToEuroInput(initialData.amount) : '',
+      }));
+    }
+  }, [initialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -52,22 +65,26 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const onValid = async (data: typeof formData) => {
     setGeneralError(null);
-    if (!validate()) return;
-    try {
-      onSubmit({
-        title: formData.title,
-        amount: parseFloat(formData.amount),
-        date: new Date(formData.date),
-        categoryId: formData.categoryId,
-        importance: parseInt(formData.importance) as ImportanceLevel,
-        notes: formData.notes || undefined,
-      });
-    } catch (err: any) {
-      setGeneralError(err?.message || 'Unbekannter Fehler beim Speichern');
+    // Convert amount to integer cents using shared util
+    const amountCents = euroInputToCents(data.amount);
+    const payload: any = {
+      ...(initialData ? { id: initialData.id } : {}),
+      title: data.title.trim(),
+      amount: Number.isFinite(amountCents) ? amountCents : 0,
+      date: new Date(data.date),
+      categoryId: data.categoryId,
+      importance: parseInt(data.importance) as ImportanceLevel,
+      notes: data.notes?.trim() || undefined,
+      isRecurring: !!data.isRecurring,
+      recurrenceInterval: data.isRecurring ? data.recurrenceInterval : undefined,
+    };
+    if (!payload.categoryId) {
+      setGeneralError('Kategorie ist erforderlich');
+      return;
     }
+    await onSubmit(payload);
   };
 
   const getImportanceColor = (level: string) => {
@@ -83,7 +100,7 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={event => { event.preventDefault(); if (validate()) onValid(formData); }} className="space-y-4">
       {generalError && (
         <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded mb-2">
           {generalError}
@@ -143,6 +160,27 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
             Wichtigkeit: {formData.importance}
           </span>
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 mt-2">
+        <input
+          type="checkbox"
+          id="isRecurring"
+          checked={formData.isRecurring}
+          onChange={e => setFormData({ ...formData, isRecurring: e.target.checked })}
+        />
+        <label htmlFor="isRecurring">Wiederkehrend</label>
+        {formData.isRecurring && (
+          <Select
+            label="Intervall"
+            value={formData.recurrenceInterval}
+            onChange={e => setFormData({ ...formData, recurrenceInterval: e.target.value })}
+            options={[
+              { value: 'monthly', label: 'Monatlich' },
+              { value: 'yearly', label: 'Jährlich' },
+            ]}
+          />
+        )}
       </div>
 
       <Textarea

@@ -82,11 +82,22 @@ export function mapExpenseToDomain(e: Expense): RecurringExpense {
   // Expense currently has no recurrenceInterval in your model.
   // MVP assumption: all expenses represent monthly planned expenses.
   const interval: Interval = 'monthly';
-
+  // Cents-only contract: prefer amountCents, else support legacy euro-style float
+  let amountCents = 0;
+  if (typeof e.amountCents === 'number' && Number.isFinite(e.amountCents)) {
+    amountCents = Math.round(e.amountCents);
+  } else if (typeof e.amount === 'number' && Number.isFinite(e.amount)) {
+    // If amount is a float < 10000, treat as euro (legacy), else as cents
+    if (e.amount < 10000 && e.amount % 1 !== 0) {
+      amountCents = Math.round(e.amount * 100);
+    } else {
+      amountCents = Math.round(e.amount);
+    }
+  }
   return {
     id: e.id,
     name: e.title,
-    amount: e.amount,
+    amount: amountCents,
     interval,
     startDate: toIsoDate(e.date),
     note: e.notes,

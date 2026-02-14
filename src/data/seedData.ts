@@ -30,15 +30,15 @@ export const seedIncomeCategories: Omit<IncomeCategory, 'id' | 'createdAt' | 'up
   { name: "Sonstiges", description: "Sonstige externe Einnahmen", color: "#6b7280" }
 ];
 
-export const seedExpenseCategories: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Wohnen', description: 'Miete, Nebenkosten', color: '#ef4444', importance: 6 },
-  { name: 'Lebensmittel', description: 'Essen & Trinken', color: '#f59e0b', importance: 6 },
-  { name: 'Transport', description: 'Auto, ÖPNV', color: '#3b82f6', importance: 5 },
-  { name: 'Versicherungen', description: 'KV, Haftpflicht, etc.', color: '#8b5cf6', importance: 6 },
-  { name: 'Unterhaltung', description: 'Streaming, Hobbys', color: '#ec4899', importance: 3 },
-  { name: 'Kleidung', description: 'Bekleidung & Schuhe', color: '#14b8a6', importance: 3 },
-  { name: 'Fitness', description: 'Fitnessstudio, Sport', color: '#10b981', importance: 4 },
-  { name: 'Sonstiges', description: 'Andere Ausgaben', color: '#6b7280', importance: 2 },
+export const seedExpenseCategories: Omit<ExpenseCategory, 'createdAt' | 'updatedAt'>[] = [
+  { id: 'wohnen', name: 'Wohnen', description: 'Miete, Nebenkosten', color: '#ef4444', importance: 6 },
+  { id: 'lebensmittel', name: 'Lebensmittel', description: 'Essen & Trinken', color: '#f59e0b', importance: 6 },
+  { id: 'transport', name: 'Transport', description: 'Auto, ÖPNV', color: '#3b82f6', importance: 5 },
+  { id: 'versicherungen', name: 'Versicherungen', description: 'KV, Haftpflicht, etc.', color: '#8b5cf6', importance: 6 },
+  { id: 'unterhaltung', name: 'Unterhaltung', description: 'Streaming, Hobbys', color: '#ec4899', importance: 3 },
+  { id: 'kleidung', name: 'Kleidung', description: 'Bekleidung & Schuhe', color: '#14b8a6', importance: 3 },
+  { id: 'fitness', name: 'Fitness', description: 'Fitnessstudio, Sport', color: '#10b981', importance: 4 },
+  { id: 'sonstiges', name: 'Sonstiges', description: 'Andere Ausgaben', color: '#6b7280', importance: 2 },
 ];
 
 // ==================== EINKOMMEN ====================
@@ -73,7 +73,7 @@ export const seedExpenses: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>[] = [
     title: 'Miete',
     amount: 900,
     date: new Date(now.getFullYear(), now.getMonth(), 1),
-    categoryId: '', // Wohnen
+    categoryId: 'wohnen',
     importance: 6,
     notes: 'Monatliche Miete',
   },
@@ -81,49 +81,49 @@ export const seedExpenses: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>[] = [
     title: 'Nebenkosten',
     amount: 150,
     date: new Date(now.getFullYear(), now.getMonth(), 1),
-    categoryId: '', // Wohnen
+    categoryId: 'wohnen',
     importance: 6,
   },
   {
     title: 'Lebensmitteleinkauf',
     amount: 85.50,
     date: new Date(now.getFullYear(), now.getMonth(), 5),
-    categoryId: '', // Lebensmittel
+    categoryId: 'lebensmittel',
     importance: 6,
   },
   {
     title: 'Krankenversicherung',
     amount: 320,
     date: new Date(now.getFullYear(), now.getMonth(), 1),
-    categoryId: '', // Versicherungen
+    categoryId: 'versicherungen',
     importance: 6,
   },
   {
     title: 'Fitnessstudio',
     amount: 35,
     date: new Date(now.getFullYear(), now.getMonth(), 1),
-    categoryId: '', // Fitness
+    categoryId: 'fitness',
     importance: 4,
   },
   {
     title: 'Netflix',
     amount: 12.99,
     date: new Date(now.getFullYear(), now.getMonth(), 10),
-    categoryId: '', // Unterhaltung
+    categoryId: 'unterhaltung',
     importance: 2,
   },
   {
     title: 'Spotify',
     amount: 9.99,
     date: new Date(now.getFullYear(), now.getMonth(), 12),
-    categoryId: '', // Unterhaltung
+    categoryId: 'unterhaltung',
     importance: 2,
   },
   {
     title: 'Tankfüllung',
     amount: 65,
     date: new Date(now.getFullYear(), now.getMonth(), 8),
-    categoryId: '', // Transport
+    categoryId: 'transport',
     importance: 5,
   },
 ];

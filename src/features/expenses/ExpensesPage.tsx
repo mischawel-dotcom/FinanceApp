@@ -3,8 +3,10 @@ import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Expense, ExpenseCategory } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
+import { formatCentsEUR } from '@/ui/formatMoney';
 import { ExpenseCategoryForm } from './ExpenseCategoryForm';
 import { ExpenseForm } from './ExpenseForm';
+// Patch: ExpenseForm now accepts onSubmit: (data: any) => void
 
 export default function ExpensesPage() {
   const { 
@@ -62,23 +64,21 @@ export default function ExpensesPage() {
   };
 
   // Expense Handlers
-  const handleCreateExpense = async () => {
-    await createExpense();
+  const handleCreateExpense = async (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
+    await createExpense(payload);
+    setIsExpenseModalOpen(false);
+    setEditingExpense(null);
+  };
+
+  const handleUpdateExpense = async (payload: Expense) => {
+    await updateExpense(payload);
+    setEditingExpense(null);
     setIsExpenseModalOpen(false);
   };
 
-  const handleUpdateExpense = async () => {
-    if (editingExpense) {
-      await updateExpense();
-      setEditingExpense(null);
-      setIsExpenseModalOpen(false);
-    }
-  };
-
-  const handleDeleteExpense = async () => {
-    if (confirm('Ausgabe wirklich löschen?')) {
-      await deleteExpense();
-    }
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm('Ausgabe wirklich löschen?')) return;
+    await deleteExpense(id);
   };
 
   const openEditExpenseModal = (expense: Expense) => {
@@ -150,12 +150,12 @@ export default function ExpensesPage() {
   const expenseColumns = [
     { key: 'date', label: 'Datum', render: (exp: Expense) => format(exp.date, 'dd.MM.yyyy') },
     { key: 'title', label: 'Titel' },
-    { 
-      key: 'amount', 
-      label: 'Betrag', 
+    {
+      key: 'amount',
+      label: 'Betrag',
       render: (exp: Expense) => (
         <span className="font-semibold text-danger-600">
-          {exp.amount.toFixed(2)} €
+          {formatCentsEUR(exp.amount)}
         </span>
       )
     },
@@ -177,7 +177,7 @@ export default function ExpensesPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditExpenseModal(exp)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={handleDeleteExpense}>
+          <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(exp.id)}>
             Löschen
           </Button>
         </div>

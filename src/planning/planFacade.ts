@@ -42,14 +42,15 @@ export async function buildDashboardModelFromRepositories(
   options?: { goalLimit?: number }
 ): Promise<DashboardModel> {
   const planInputRaw = buildPlanInputFromPersistedStore();
-  // Normalize expenses to integer cents (amountCents)
+  // Normalize expenses: treat amount as integer cents already
   const normalizedExpenses = (planInputRaw.expenses || []).map(e => {
     const anyE = e as any;
-    const amountCents =
-      Number.isInteger(anyE.amountCents) ? anyE.amountCents :
-      typeof anyE.amount === "number" ? Math.round(anyE.amount * 100) :
-      0;
-    // forecast expects integer cents in .amount
+    let amountCents = 0;
+    if (typeof anyE.amount === 'number' && Number.isFinite(anyE.amount)) {
+      amountCents = Math.round(anyE.amount);
+    } else if (typeof anyE.amountCents === 'number' && Number.isFinite(anyE.amountCents)) {
+      amountCents = Math.round(anyE.amountCents);
+    }
     return { ...e, amountCents, amount: amountCents };
   });
   const planInput = { ...planInputRaw, expenses: normalizedExpenses };
