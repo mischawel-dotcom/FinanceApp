@@ -1,3 +1,8 @@
+// Minimal euro to cents util for legacy repair
+function euroToCents(euro: number | undefined): number {
+  if (typeof euro !== 'number' || isNaN(euro) || !isFinite(euro)) return 0;
+  return Math.round(euro * 100);
+}
 /**
  * CONCRETE REPOSITORY IMPLEMENTATIONS
  */
@@ -154,6 +159,37 @@ class GoalRepositoryImpl extends BaseRepositoryImpl<FinancialGoal> implements Go
     super('finance-app:goals');
   }
 
+  // Patch: repair legacy goals on load
+  async getAll(): Promise<FinancialGoal[]> {
+    const items = await super.getAll();
+    let repaired = false;
+    for (const goal of items) {
+      // Repair targetAmountCents
+      if (goal.targetAmountCents === undefined && typeof goal.targetAmount === 'number') {
+        goal.targetAmountCents = euroToCents(goal.targetAmount);
+        delete goal.targetAmount;
+        repaired = true;
+      }
+      // Repair currentAmountCents
+      if (goal.currentAmountCents === undefined && typeof goal.currentAmount === 'number') {
+        goal.currentAmountCents = euroToCents(goal.currentAmount);
+        delete goal.currentAmount;
+        repaired = true;
+      }
+      // Repair monthlyContributionCents
+      if (goal.monthlyContributionCents === undefined && typeof goal.monthlyContribution === 'number') {
+        goal.monthlyContributionCents = euroToCents(goal.monthlyContribution);
+        delete goal.monthlyContribution;
+        repaired = true;
+      }
+    }
+    // Persist repairs if needed
+    if (repaired) {
+      await this.storage.set(this.storageKey, items);
+    }
+    return items;
+  }
+
   async getByPriority(priority: string): Promise<FinancialGoal[]> {
     const items = await this.getAll();
     return items.filter((item) => item.priority === priority);
@@ -183,6 +219,7 @@ class RecommendationRepositoryImpl
 
 // ==================== EXPORTS ====================
 
+
 export const incomeRepository = new IncomeRepositoryImpl();
 export const incomeCategoryRepository = new IncomeCategoryRepositoryImpl();
 export const expenseRepository = new ExpenseRepositoryImpl();
@@ -190,3 +227,6 @@ export const expenseCategoryRepository = new ExpenseCategoryRepositoryImpl();
 export const assetRepository = new AssetRepositoryImpl();
 export const goalRepository = new GoalRepositoryImpl();
 export const recommendationRepository = new RecommendationRepositoryImpl();
+
+// For testing: export GoalRepositoryImpl class
+export { GoalRepositoryImpl };

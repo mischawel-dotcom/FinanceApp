@@ -1,3 +1,58 @@
+        it('past one-time expense does not affect current or future month buckets', () => {
+          const incomes = [
+            { id: 'i1', name: 'Salary', amount: 100000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
+          ];
+          const expenses = [
+            // Past one-time expense (should NOT affect any bucket)
+            { id: 'ePast', name: 'Past One-Time', amount: 300000, interval: 'once', startDate: '2026-01-15' },
+            // Current recurring expense (should affect both months)
+            { id: 'eRec', name: 'Current Recurring', amount: 1000, interval: 'monthly', startDate: '2026-02-01' },
+          ];
+          const settings = { forecastMonths: 2, startMonth: '2026-02' };
+          const input = mkInput({ incomes, expenses });
+          const proj = buildPlanProjection(input, settings);
+          expect(proj.timeline).toHaveLength(2);
+          const m1 = proj.timeline[0];
+          const m2 = proj.timeline[1];
+          expect(m1.month).toBe('2026-02');
+          expect(m2.month).toBe('2026-03');
+          // Only the current recurring expense should be counted
+          expect(m1.buckets.bound).toBe(1000);
+          expect(m2.buckets.bound).toBe(1000);
+          // Optional guards: integer/finite
+          [m1.buckets.bound, m2.buckets.bound].forEach(x => {
+            expect(Number.isFinite(x)).toBe(true);
+            expect(Number.isInteger(x)).toBe(true);
+          });
+        });
+      it('bound is month-scoped: future items do not leak into previous months', () => {
+        const incomes = [
+          { id: 'i1', name: 'Salary', amount: 100000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
+        ]; // stable income
+        const expenses = [
+          { id: 'eA', name: 'Future Expense', amount: 1000, interval: 'monthly', startDate: '2026-02-01' }, // starts in m2
+        ];
+        const knownPayments = [
+          { id: 'pB', name: 'Future Payment', amount: 2000, dueDate: '2026-02-15' }, // due in m2
+        ];
+        const settings = { forecastMonths: 2, startMonth: '2026-01' };
+        const input = mkInput({ incomes, expenses, knownPayments });
+        const proj = buildPlanProjection(input, settings);
+        expect(proj.timeline).toHaveLength(2);
+        const m1 = proj.timeline[0];
+        const m2 = proj.timeline[1];
+        expect(m1.month).toBe('2026-01');
+        expect(m2.month).toBe('2026-02');
+        // Bound for m1 should be 0 (no expenses/payments active)
+        expect(m1.buckets.bound).toBe(0);
+        // Bound for m2 should be 1000 (expenseA) + 2000 (paymentB) = 3000
+        expect(m2.buckets.bound).toBe(3000);
+        // Optional guards: integer/finite
+        [m1.buckets.bound, m2.buckets.bound].forEach(x => {
+          expect(Number.isFinite(x)).toBe(true);
+          expect(Number.isInteger(x)).toBe(true);
+        });
+      });
     it('includes one-time income only in its month, recurring in all', () => {
       const recurringIncome: RecurringIncome = {
         id: 'i1',

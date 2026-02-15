@@ -160,6 +160,13 @@ export default function ExpensesPage() {
       )
     },
     { key: 'category', label: 'Kategorie', render: (exp: Expense) => getCategoryName(exp.categoryId) },
+    {
+      key: 'recurring',
+      label: 'Wiederkehrend',
+      render: (exp: Expense) => (
+        exp.isRecurring ? <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Ja</span> : <span className="px-2 py-1 text-xs text-gray-500">Nein</span>
+      )
+    },
     { 
       key: 'importance', 
       label: 'Wichtigkeit', 

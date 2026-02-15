@@ -1,7 +1,27 @@
+  it("submits targetAmountCents (integer) and not targetAmount", async () => {
+    let submitted: any = null;
+    const { getByLabelText, container } = render(
+      <GoalForm
+        onSubmit={(data) => { submitted = data; }}
+        onCancel={() => {}}
+      />
+    );
+    fireEvent.change(getByLabelText(/Name des Ziels/i), { target: { value: "urlaub" } });
+    fireEvent.change(getByLabelText(/Zielbetrag/i), { target: { value: "2000" } });
+    fireEvent.change(getByLabelText(/Monatliche Sparrate/i), { target: { value: "400" } });
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form!);
+    await waitFor(() => expect(submitted).not.toBeNull());
+    expect(submitted.targetAmountCents).toBe(200000);
+    expect(Number.isInteger(submitted.targetAmountCents)).toBe(true);
+    expect(submitted).not.toHaveProperty("targetAmount");
+    expect(submitted.monthlyContributionCents).toBe(40000);
+  });
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { GoalForm } from "./GoalForm";
 
-describe("GoalForm monthlyContributionCents", () => {
+describe("GoalForm cents regression", () => {
   it("converts input '50' to 5000 cents", async () => {
     let submitted: any = null;
     const { getByLabelText, container } = render(
@@ -20,6 +40,30 @@ describe("GoalForm monthlyContributionCents", () => {
     fireEvent.submit(form!);
     await waitFor(() => expect(submitted).not.toBeNull());
     expect(submitted.monthlyContributionCents).toBe(5000);
+  });
+
+  it("creates goal with amount and monthly contribution as integer cents", async () => {
+    let submitted: any = null;
+    const { getByLabelText, container } = render(
+      <GoalForm
+        onSubmit={(data) => { submitted = data; }}
+        onCancel={() => {}}
+      />
+    );
+    fireEvent.change(getByLabelText(/Name des Ziels/i), { target: { value: "urlaub" } });
+    fireEvent.change(getByLabelText(/Zielbetrag/i), { target: { value: "2000" } });
+    fireEvent.change(getByLabelText(/Monatliche Sparrate/i), { target: { value: "400" } });
+    fireEvent.change(getByLabelText(/Priorität/i), { target: { value: "medium" } });
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form!);
+    await waitFor(() => expect(submitted).not.toBeNull());
+    // targetAmountCents should be 200000, monthlyContributionCents should be 40000, both integers
+    expect(submitted.targetAmountCents).toBe(200000);
+    expect(Number.isInteger(submitted.targetAmountCents)).toBe(true);
+    expect(submitted).not.toHaveProperty("targetAmount");
+    expect(submitted.monthlyContributionCents).toBe(40000);
+    expect(Number.isInteger(submitted.monthlyContributionCents)).toBe(true);
   });
 
   it("empty input leads to undefined", async () => {

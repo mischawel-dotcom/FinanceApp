@@ -49,12 +49,20 @@ export default function DashboardPage() {
   const totalAssetInvestment = assets.reduce((sum, asset) => sum + asset.initialInvestment, 0);
   const assetGain = totalAssetValue - totalAssetInvestment;
 
-  // Goals
-  const totalGoalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
-  const totalGoalCurrent = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-  const overallGoalProgress = totalGoalTarget > 0 
-    ? ((totalGoalCurrent / totalGoalTarget) * 100).toFixed(1)
-    : '0';
+  // Goals (cents-only, robust)
+  const totalGoalTarget = goals.reduce(
+    (sum, goal) => sum + (typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0),
+    0
+  );
+  const totalGoalCurrent = goals.reduce(
+    (sum, goal) => sum + (typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0),
+    0
+  );
+  let overallGoalProgress = 0;
+  if (totalGoalTarget > 0) {
+    const pct = (totalGoalCurrent / totalGoalTarget) * 100;
+    overallGoalProgress = Number.isFinite(pct) ? Math.min(100, pct) : 0;
+  }
 
   // Expenses by category (current month)
   const expensesByCategory = expenseCategories.map((cat) => {
@@ -203,14 +211,15 @@ export default function DashboardPage() {
         <Card title="Wichtigste Ziele">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {priorityGoals.map((goal) => {
-              const progress = goal.targetAmount > 0
-                ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100)
-                : 0;
+              const targetCents = typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0;
+              const currentCents = typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0;
+              const progressRaw = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
+              const progress = Number.isFinite(progressRaw) ? Math.min(100, progressRaw) : 0;
               return (
                 <div key={goal.id} className="p-4 bg-gray-50 rounded-lg">
                   <div className="font-semibold text-gray-900 mb-2">{goal.name}</div>
                   <div className="text-sm text-gray-600 mb-2">
-                    {formatCentsEUR(goal.currentAmount)} / {formatCentsEUR(goal.targetAmount)}
+                    {formatCentsEUR(currentCents)} / {formatCentsEUR(targetCents)}
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-1">
                     <div
@@ -239,7 +248,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary-600">{overallGoalProgress}%</div>
+              <div className="text-3xl font-bold text-primary-600">{overallGoalProgress.toFixed(1)}%</div>
               <div className="text-sm text-gray-500">erreicht</div>
             </div>
           </div>

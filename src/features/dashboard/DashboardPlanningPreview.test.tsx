@@ -1,3 +1,40 @@
+test("renders correct 'Verplant' value for goal monthlyContributionCents", async () => {
+  // Setup: income 400000, expense 100000, goal monthlyContributionCents 40000
+  const model = {
+    heroFree: 260000,
+    buckets: { bound: 100000, planned: 40000, invested: 0, free: 260000 },
+    freeTimeline: [],
+    shortfalls: [],
+    goals: [{ goalId: "g1", name: "Test Goal", priority: 1, reachable: true }],
+    domainGoals: [{ id: "g1", name: "Test Goal", priority: 1, targetAmountCents: 200000, monthlyContributionCents: 40000 }],
+    projection: {
+      timeline: [
+        {
+          month: "2026-02",
+          buckets: { bound: 100000, planned: 40000, invested: 0, free: 260000 },
+          plannedGoalBreakdownById: { g1: 40000 },
+        },
+      ],
+    },
+  };
+  // Patch the planFacade mock for this test only
+  const { buildDashboardModelFromRepositories } = await import("@/planning/planFacade");
+  (buildDashboardModelFromRepositories as any).mockImplementationOnce(async () => model);
+  const { default: DashboardPlanningPreview } = await import("./DashboardPlanningPreview");
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <DashboardPlanningPreview />
+    </MemoryRouter>
+  );
+  // Wait for the "Verplant" value to appear and assert robustly
+  const label = await screen.findByText(/Verplant:/i);
+  const row = label.closest("div") ?? label.parentElement;
+  expect(
+    within(row!).getByText((content) =>
+      content.replace(/\s/g, "") === "400,00€"
+    )
+  ).toBeInTheDocument();
+});
 test("clicking action button for planning intent navigates to /", async () => {
   const mod = await import("@/planning/recommendations");
   (mod.selectDashboardRecommendations as any).mockImplementation(() => [
@@ -71,6 +108,7 @@ test("renders and handles action button for high_expenses recommendation", async
 });
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { within } from "@testing-library/react";
 import { test, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -134,7 +172,6 @@ test("renders action button for goal_contrib_issue", async () => {
       type: "goal_contrib_issue",
       title: "Ziel fehlt",
       reason: "Für das Ziel fehlt ein Beitrag.",
-      evidence: { goalId: "g1" },
       score: { impact: 1, urgency: 1, simplicity: 1, robustness: 1, total: 1 },
       action: { label: "Ziel öffnen", intent: "goals" },
     },

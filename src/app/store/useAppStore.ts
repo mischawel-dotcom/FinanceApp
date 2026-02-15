@@ -265,9 +265,38 @@ export const useAppStore = create<AppStore>()(
       createAsset: async () => {},
       updateAsset: async () => {},
       deleteAsset: async () => {},
-      createGoal: async () => {},
+      createGoal: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
+        const now = new Date();
+        const newGoal = {
+          ...payload,
+          id: `goal${Date.now()}`,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((state) => ({
+          goals: [...state.goals, newGoal],
+        }));
+      },
       updateGoal: async () => {},
-      deleteGoal: async () => {},
+      deleteGoal: async (id: string) => {
+        if (!id) return;
+        try {
+          // Remove from repository/storage
+          const repo = require('../../data/repositories').goalRepository;
+          // Defensive: normalize id
+          const goals = get().goals ?? [];
+          const goal = goals.find((g: any) => g.id === id);
+          if (!goal) return; // idempotent: nothing to delete
+          // Remove from repo
+          if (repo && typeof repo.delete === 'function') {
+            await repo.delete(id);
+          }
+        } catch (err) {
+          console.error('deleteGoal failed:', err);
+        }
+        // Remove from state immediately
+        set((state) => ({ goals: (state.goals ?? []).filter((g: any) => g.id !== id) }));
+      },
       generateRecommendations: async () => {},
       deleteRecommendation: async () => {},
     }),

@@ -78,30 +78,32 @@ function mapOneTimeIncomeToDomain(i: Income): RecurringIncome {
   };
 }
 
-export function mapExpenseToDomain(e: Expense): RecurringExpense {
-  // Expense currently has no recurrenceInterval in your model.
-  // MVP assumption: all expenses represent monthly planned expenses.
-  const interval: Interval = 'monthly';
-  // Cents-only contract: prefer amountCents, else support legacy euro-style float
-  let amountCents = 0;
-  if (typeof e.amountCents === 'number' && Number.isFinite(e.amountCents)) {
-    amountCents = Math.round(e.amountCents);
-  } else if (typeof e.amount === 'number' && Number.isFinite(e.amount)) {
-    // If amount is a float < 10000, treat as euro (legacy), else as cents
-    if (e.amount < 10000 && e.amount % 1 !== 0) {
-      amountCents = Math.round(e.amount * 100);
-    } else {
-      amountCents = Math.round(e.amount);
+
+export function mapExpenseToDomain(e: Expense): RecurringExpense | null {
+  // If the expense is recurring, map as RecurringExpense; else, return null.
+  if (e.isRecurring) {
+    const interval: Interval = mapRecurrenceIntervalToInterval((e as any).recurrenceInterval);
+    let amountCents = 0;
+    if (typeof e.amountCents === 'number' && Number.isFinite(e.amountCents)) {
+      amountCents = Math.round(e.amountCents);
+    } else if (typeof e.amount === 'number' && Number.isFinite(e.amount)) {
+      if (e.amount < 10000 && e.amount % 1 !== 0) {
+        amountCents = Math.round(e.amount * 100);
+      } else {
+        amountCents = Math.round(e.amount);
+      }
     }
+    return {
+      id: e.id,
+      name: e.title,
+      amount: amountCents,
+      interval,
+      startDate: toIsoDate(e.date),
+      note: e.notes,
+    };
   }
-  return {
-    id: e.id,
-    name: e.title,
-    amount: amountCents,
-    interval,
-    startDate: toIsoDate(e.date),
-    note: e.notes,
-  };
+  // Non-recurring: handled as knownPayment, not RecurringExpense
+  return null;
 }
 
 export function mapGoalToDomain(g: FinancialGoal): DomainGoal {
@@ -113,6 +115,7 @@ export function mapGoalToDomain(g: FinancialGoal): DomainGoal {
     wishDate: toIsoDate(g.targetDate),
     priority: mapRepoGoalPriorityToDomain(g.priority),
     note: g.description,
+    monthlyContributionCents: g.monthlyContributionCents ?? undefined,
   };
 }
 
@@ -144,7 +147,26 @@ export function buildPlanInputFromRepoData(args: {
     .map(mapOneTimeIncomeToDomain);
 
   const incomes = [...recurringIncomes, ...oneTimeIncomes];
-  const expenses = args.expenses.map(mapExpenseToDomain);
+  // Recurring expenses only
+  const expenses = args.expenses.map(mapExpenseToDomain).filter((x): x is RecurringExpense => Boolean(x));
+
+  // One-time (non-recurring) expenses as KnownFuturePayment
+  const knownPayments = [
+    ...((args.knownPayments ?? []) as any),
+    ...args.expenses
+      .filter(e => !e.isRecurring)
+      .map(e => ({
+        id: e.id,
+        name: e.title,
+        amount: typeof e.amountCents === 'number' && Number.isFinite(e.amountCents)
+          ? Math.round(e.amountCents)
+          : (typeof e.amount === 'number' && Number.isFinite(e.amount)
+            ? (e.amount < 10000 && e.amount % 1 !== 0 ? Math.round(e.amount * 100) : Math.round(e.amount))
+            : 0),
+        dueDate: toIsoDate(e.date),
+        note: e.notes,
+      })),
+  ];
   const goals = args.goals.map(mapGoalToDomain);
   const investments = args.assets.map(mapAssetToInvestmentPlan);
 
@@ -154,6 +176,6 @@ export function buildPlanInputFromRepoData(args: {
     reserves: [],
     goals,
     investments,
-    knownPayments: [],
+    knownPayments,
   };
 }

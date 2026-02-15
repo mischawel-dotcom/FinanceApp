@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
+import { formatCentsEUR } from "@/ui/formatMoney";
 import { useAppStore } from "@/app/store/useAppStore";
 import type { FinancialGoal, GoalPriority } from "@shared/types";
 import { Button, Card, Modal } from "@shared/components";
@@ -124,9 +125,13 @@ export default function GoalsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedGoals.map((goal) => {
-            const progress =
-              goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
-            const remaining = goal.targetAmount - goal.currentAmount;
+
+            // Backward compatibility: prefer cents fields, fallback to old euro fields
+            const targetCents = goal.targetAmountCents ?? Math.round((goal.targetAmount ?? 0) * 100);
+            const currentCents = goal.currentAmountCents ?? Math.round((goal.currentAmount ?? 0) * 100);
+            const progressRaw = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
+            const progress = Number.isFinite(progressRaw) ? Math.min(100, progressRaw) : 0;
+            const remainingCents = targetCents - currentCents;
 
             const isHighlighted = highlightedGoal === goal.id;
             return (
@@ -155,15 +160,15 @@ export default function GoalsPage() {
                     <div className="space-y-3 mb-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Zielbetrag:</span>
-                        <span className="font-semibold">{goal.targetAmount.toFixed(2)} €</span>
+                        <span className="font-semibold">{formatCentsEUR(targetCents)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Aktuell:</span>
-                        <span className="font-semibold text-primary-600">{goal.currentAmount.toFixed(2)} €</span>
+                        <span className="font-semibold text-primary-600">{formatCentsEUR(currentCents)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Noch benötigt:</span>
-                        <span className="font-semibold text-gray-900">{remaining.toFixed(2)} €</span>
+                        <span className="font-semibold text-gray-900">{formatCentsEUR(remainingCents)}</span>
                       </div>
                     </div>
                     <div className="mb-4">

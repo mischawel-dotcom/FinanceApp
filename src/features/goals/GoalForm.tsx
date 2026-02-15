@@ -1,4 +1,10 @@
 import { useState, FormEvent } from 'react';
+// Minimal euro to cents util
+function euroToCents(euro: string | number): number {
+  const n = typeof euro === 'string' ? parseFloat(euro) : euro;
+  if (!isNaN(n) && isFinite(n)) return Math.round(n * 100);
+  return 0;
+}
 import { format } from 'date-fns';
 import type { FinancialGoal, GoalPriority } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
@@ -17,9 +23,29 @@ const priorityOptions: { value: GoalPriority; label: string }[] = [
 ];
 
 export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
+  if (process.env.NODE_ENV !== "production" && initialData) {
+    // Dev-only: log incoming goal object and relevant fields
+    // eslint-disable-next-line no-console
+    console.log("[GoalForm] initialData (edit mode):", initialData);
+    // eslint-disable-next-line no-console
+    console.log("[GoalForm] initialData.targetAmountCents:", initialData.targetAmountCents);
+    // eslint-disable-next-line no-console
+    console.log("[GoalForm] initialData.targetAmount:", initialData.targetAmount);
+  }
+
+  // Prefer cents field if present, fallback to euro field
+  const initialTargetAmount = initialData?.targetAmountCents !== undefined
+    ? (initialData.targetAmountCents / 100).toString()
+    : (initialData?.targetAmount?.toString() || '');
+
+  if (process.env.NODE_ENV !== "production" && initialData) {
+    // eslint-disable-next-line no-console
+    console.log("[GoalForm] Derived initialTargetAmount for form:", initialTargetAmount);
+  }
+
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    targetAmount: initialData?.targetAmount?.toString() || '',
+    targetAmount: initialTargetAmount,
     currentAmount: initialData?.currentAmount?.toString() || '0',
     targetDate: initialData?.targetDate ? format(initialData.targetDate, 'yyyy-MM-dd') : '',
     priority: initialData?.priority || 'medium' as GoalPriority,
@@ -30,6 +56,9 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitHit, setSubmitHit] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -50,28 +79,41 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
+    setSubmitHit(true);
+    console.log("GoalForm submit handler HIT");
     e.preventDefault();
-    
+    setSubmitError(null);
     if (!validate()) return;
-    
-    // Parse monthlyContributionEuro to cents
-    let monthlyContributionCents: number | undefined = undefined;
-    if (formData.monthlyContributionEuro !== undefined && formData.monthlyContributionEuro !== "") {
-      const euro = parseFloat(formData.monthlyContributionEuro);
-      if (!isNaN(euro) && isFinite(euro) && euro > 0) {
-        monthlyContributionCents = Math.round(euro * 100);
+    setIsSubmitting(true);
+    try {
+      // Parse monthlyContributionEuro to cents
+      let monthlyContributionCents: number | undefined = undefined;
+      if (formData.monthlyContributionEuro !== undefined && formData.monthlyContributionEuro !== "") {
+        const euro = parseFloat(formData.monthlyContributionEuro);
+        if (!isNaN(euro) && isFinite(euro) && euro > 0) {
+          monthlyContributionCents = Math.round(euro * 100);
+        }
       }
+      // Cents-only contract for target amount
+      const targetAmountCents = euroToCents(formData.targetAmount);
+      const payload = {
+        name: formData.name,
+        targetAmountCents,
+        currentAmount: parseFloat(formData.currentAmount), // keep as-is unless domain requires currentAmountCents
+        targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
+        priority: formData.priority,
+        description: formData.description || undefined,
+        monthlyContributionCents,
+      };
+      console.log("GoalForm calling createGoal with payload:", payload);
+      await onSubmit(payload);
+    } catch (err) {
+      console.error("Goal create failed:", err);
+      setSubmitError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSubmitting(false);
     }
-    onSubmit({
-      name: formData.name,
-      targetAmount: parseFloat(formData.targetAmount),
-      currentAmount: parseFloat(formData.currentAmount),
-      targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
-      priority: formData.priority,
-      description: formData.description || undefined,
-      monthlyContributionCents,
-    });
   };
 
   const progress = formData.targetAmount && parseFloat(formData.targetAmount) > 0
@@ -185,12 +227,23 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         </div>
       </div>
 
+      {submitError && (
+        <p role="alert" className="text-red-600 text-sm mb-2">{submitError}</p>
+      )}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="text-xs text-gray-500 mt-2">
+          <div>Submit triggered: {submitHit ? "yes" : "no"}</div>
+          {Object.keys(errors).length > 0 && (
+            <pre className="text-xs text-red-500">{JSON.stringify(errors, null, 2)}</pre>
+          )}
+        </div>
+      )}
       <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           Abbrechen
         </Button>
-        <Button type="submit" variant="primary">
-          {initialData ? 'Aktualisieren' : 'Erstellen'}
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? 'Bitte warten...' : (initialData ? 'Aktualisieren' : 'Erstellen')}
         </Button>
       </div>
     </form>
