@@ -94,7 +94,8 @@ export default function GoalsPage() {
 
   const handleUpdate = async (data: any) => {
     if (!editingGoal) return;
-    await updateGoal(editingGoal.id, data);
+    // Ensure id is passed for updateGoal
+    await updateGoal(editingGoal.id, { ...data, id: editingGoal.id });
     setEditingGoal(null);
     setIsModalOpen(false);
   };
@@ -169,6 +170,14 @@ export default function GoalsPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Noch benötigt:</span>
                         <span className="font-semibold text-gray-900">{formatCentsEUR(remainingCents)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm" data-testid="goal-monthly-savings-row">
+                        <span className="text-gray-600">Monatliche Sparrate:</span>
+                        <span className="font-semibold text-gray-900">
+                          {goal.monthlyContributionCents && goal.monthlyContributionCents > 0
+                            ? formatCentsEUR(goal.monthlyContributionCents)
+                            : "—"}
+                        </span>
                       </div>
                     </div>
                     <div className="mb-4">

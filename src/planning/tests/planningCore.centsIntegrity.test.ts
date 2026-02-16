@@ -1,3 +1,43 @@
+              it("planned is 0 after goal is fully funded (no fallback)", () => {
+                const input = {
+                  incomes: [
+                    {
+                      id: "inc1",
+                      title: "High Income",
+                      amount: 1000000,
+                      interval: "monthly",
+                      startDate: "2026-02-01",
+                    }
+                  ],
+                  expenses: [],
+                  reserves: [],
+                  investments: [],
+                  goals: [
+                    {
+                      id: "goal1",
+                      name: "Test Goal",
+                      targetAmountCents: 130000,
+                      currentAmountCents: 30000,
+                      monthlyContributionCents: 50000,
+                    }
+                  ],
+                };
+                const settings = { forecastMonths: 5, startMonth: "2026-02" };
+                const proj = buildPlanProjection(input, settings);
+                // Month 1: planned = 50000
+                expect(proj.timeline[0].buckets.planned).toBe(50000);
+                // Month 2: planned = 50000
+                expect(proj.timeline[1].buckets.planned).toBe(50000);
+                // Month 3: planned = 0 (goal fully funded)
+                expect(proj.timeline[2].buckets.planned).toBe(0);
+                // Month 4+: planned = 0
+                expect(proj.timeline[3].buckets.planned).toBe(0);
+                expect(proj.timeline[4].buckets.planned).toBe(0);
+                // Free increases by 50000 starting with Month 3
+                const free1 = proj.timeline[0].buckets.free;
+                const free3 = proj.timeline[2].buckets.free;
+                expect(free3 - free1).toBe(50000);
+              });
             it("first month result is identical regardless of forecast length", () => {
               const input = {
                 incomes: [

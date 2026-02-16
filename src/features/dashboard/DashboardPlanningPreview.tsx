@@ -137,8 +137,11 @@ export default function DashboardPlanningPreview() {
               >Details</button>
             </span>
           </div>
-          <div>Investiert: <b>{formatCentsEUR(buckets.invested)}</b></div>
+          <div>Investiert (Monat): <b>{formatCentsEUR(buckets.invested)}</b></div>
           <div>Frei: <b>{formatCentsEUR(buckets.free)}</b></div>
+        </div>
+        <div style={{ fontSize: '0.9em', color: '#6b7280', marginTop: 8 }}>
+          Hinweis: Vermögens-Bestand (Assets) ist separat und nicht Teil der 4 Cashflow-Töpfe. Bestand siehe Vermögen/Anlagen.
         </div>
         {/* Breakdown Popover/Details */}
     {showBreakdown && (

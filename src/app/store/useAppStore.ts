@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { Income } from '../../shared/types';
 import { persist } from 'zustand/middleware';
+import { assetRepository, goalRepository } from '../../data/repositories';
 import {
   seedIncomeCategories,
   seedExpenseCategories,
@@ -293,20 +294,12 @@ export const useAppStore = create<AppStore>()(
       updateAsset: async (payload: any) => {
         if (!payload?.id) return;
         try {
-          // Update in repository/storage
-          // Use static import for assetRepository so Vitest can mock it
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          // const repo = require('../../data/repositories').assetRepository;
-          // Use static import instead:
-          // (import at top of file)
-          const repo = assetRepository;
-          if (repo && typeof repo.update === 'function') {
-            await repo.update(payload.id, payload);
+          if (assetRepository && typeof assetRepository.update === 'function') {
+            await assetRepository.update(payload.id, payload);
           }
         } catch (err) {
           console.error('updateAsset failed:', err);
         }
-        // Update in state immediately
         set((state) => ({
           assets: (state.assets ?? []).map((a: any) => a.id === payload.id ? { ...a, ...payload, updatedAt: new Date() } : a),
         }));
@@ -314,25 +307,15 @@ export const useAppStore = create<AppStore>()(
       deleteAsset: async (id: string) => {
         if (!id) return;
         try {
-          // Remove from repository/storage
-          // Use static import for assetRepository so Vitest can mock it
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          // const repo = require('../../data/repositories').assetRepository;
-          // Use static import instead:
-          // (import at top of file)
-          const repo = assetRepository;
-          // Defensive: normalize id
           const assets = get().assets ?? [];
           const asset = assets.find((a: any) => a.id === id);
-          if (!asset) return; // idempotent: nothing to delete
-          // Remove from repo
-          if (repo && typeof repo.delete === 'function') {
-            await repo.delete(id);
+          if (!asset) return;
+          if (assetRepository && typeof assetRepository.delete === 'function') {
+            await assetRepository.delete(id);
           }
         } catch (err) {
           console.error('deleteAsset failed:', err);
         }
-        // Remove from state immediately
         set((state) => ({ assets: (state.assets ?? []).filter((a: any) => a.id !== id) }));
       },
       createGoal: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -347,24 +330,33 @@ export const useAppStore = create<AppStore>()(
           goals: [...state.goals, newGoal],
         }));
       },
-      updateGoal: async () => {},
+      updateGoal: async (id: string, updatedFields: any) => {
+        if (!id) return;
+        try {
+          // Update in repository/storage
+          if (goalRepository && typeof goalRepository.update === 'function') {
+            await goalRepository.update(id, updatedFields);
+          }
+        } catch (err) {
+          console.error('updateGoal failed:', err);
+        }
+        // Update in state immediately
+        set((state) => ({
+          goals: (state.goals ?? []).map((g: any) => g.id === id ? { ...g, ...updatedFields, updatedAt: new Date() } : g),
+        }));
+      },
       deleteGoal: async (id: string) => {
         if (!id) return;
         try {
-          // Remove from repository/storage
-          const repo = require('../../data/repositories').goalRepository;
-          // Defensive: normalize id
           const goals = get().goals ?? [];
           const goal = goals.find((g: any) => g.id === id);
-          if (!goal) return; // idempotent: nothing to delete
-          // Remove from repo
-          if (repo && typeof repo.delete === 'function') {
-            await repo.delete(id);
+          if (!goal) return;
+          if (goalRepository && typeof goalRepository.delete === 'function') {
+            await goalRepository.delete(id);
           }
         } catch (err) {
           console.error('deleteGoal failed:', err);
         }
-        // Remove from state immediately
         set((state) => ({ goals: (state.goals ?? []).filter((g: any) => g.id !== id) }));
       },
       generateRecommendations: async () => {},

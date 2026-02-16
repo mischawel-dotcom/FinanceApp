@@ -1,3 +1,24 @@
+it('maps repo goal with currentAmount (Euro) to correct currentAmountCents in planning input (regression)', () => {
+  const repoGoal = {
+    id: 'g2',
+    name: 'EuroGoal',
+    targetAmount: 1000,
+    currentAmount: 300, // Euro
+    monthlyContributionCents: 5000,
+    priority: 'medium',
+    description: 'Test Euro mapping',
+    createdAt: new Date('2026-02-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-02-01T00:00:00.000Z'),
+  };
+  const planInput = buildPlanInputFromRepoData({
+    incomes: [],
+    expenses: [],
+    goals: [repoGoal],
+    assets: [],
+  });
+  expect(planInput.goals.length).toBe(1);
+  expect(planInput.goals[0].currentAmountCents).toBe(30000);
+});
 it('goal monthlyContributionCents survives repo mapping and impacts planned bucket (regression)', () => {
   // Setup deterministic repo data
   const repoIncomes = [
@@ -18,7 +39,8 @@ it('goal monthlyContributionCents survives repo mapping and impacts planned buck
     {
       id: 'exp1',
       title: 'Miete',
-      amount: 100000,
+      amount: 1000,
+      amountCents: 100000,
       date: new Date('2026-02-01T00:00:00.000Z'),
       categoryId: 'cat2',
       isRecurring: true,

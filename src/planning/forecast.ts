@@ -147,15 +147,8 @@ export function buildPlanProjection(
       }
       remainingById[id] = Math.max(0, (remainingById[id] ?? 0) - contrib);
     }
-    // Use breakdown if present, else fallback to sum of all goals' monthlyContributionCents
-    const plannedFromBreakdown = plannedGoalBreakdownById
-      ? Object.values(plannedGoalBreakdownById).reduce((a, b) => a + b, 0)
-      : 0;
-    const plannedFromGoalsFallback = (input.goals ?? []).reduce(
-      (sum, g) => sum + (g.monthlyContributionCents ?? 0),
-      0
-    );
-    const planned = plannedFromBreakdown > 0 ? plannedFromBreakdown : plannedFromGoalsFallback;
+    // planned is always the sum of plannedGoalBreakdownById (no fallback)
+    const planned = Object.values(plannedGoalBreakdownById).reduce((a, b) => a + b, 0);
     // Recurring/normal incomes: unchanged
     const recurringIncomeCents = incomes
       .filter(i => {
@@ -183,6 +176,35 @@ export function buildPlanProjection(
       + (paymentsByMonth[month] || 0);
     const invested = investContrib;
     const free = sumIncomeCents - bound - planned - invested;
+        // DEBUG for month 2026-02
+        if (import.meta.env?.MODE !== 'production' && month === '2026-02') {
+          // eslint-disable-next-line no-console
+          console.log('[DEBUG:Month:2026-02]', {
+            month,
+            income: sumIncomeCents,
+            bound,
+            planned,
+            invested,
+            free,
+            paymentsThisMonth: paymentsByMonth[month] || 0,
+            expensesCount: expenses.length,
+            knownPaymentsCount: input.knownPayments?.length ?? 0,
+            expensesSample: expenses.slice(0, 10).map(e => ({
+              id: e.id,
+              name: e.name,
+              amount: e.amount,
+              interval: e.interval,
+              startDate: e.startDate,
+              endDate: (e as any).endDate,
+            })),
+            knownPaymentsSample: (input.knownPayments ?? []).slice(0, 10).map(p => ({
+              id: p.id,
+              amount: p.amount,
+              dueDate: p.dueDate,
+              note: (p as any).note,
+            })),
+          });
+        }
     // DEV-only integer guards
     const assertInt = (n: number, label: string) => {
       if (!Number.isInteger(n)) throw new Error(`[forecast] ${label} must be integer cents, got ${n}`);
@@ -214,6 +236,26 @@ export function buildPlanProjection(
       buckets: { bound, planned, invested, free },
       plannedGoalBreakdownById
     });
+    // DEBUG LOG for 2026-04
+    if (month === "2026-04") {
+      // eslint-disable-next-line no-console
+      console.log({
+        month,
+        income: sumIncomeCents,
+        bound,
+        planned,
+        invested,
+        free,
+        plannedGoalBreakdownById,
+        goalsSnapshot: (input.goals ?? []).map(g => ({
+          id: g.goalId ?? g.id,
+          name: g.name,
+          targetAmountCents: g.targetAmountCents,
+          currentAmountCents: g.currentAmountCents,
+          monthlyContributionCents: g.monthlyContributionCents,
+        })),
+      });
+    }
   }
 
   // (moved above, paymentsByMonth is now initialized before timeline loop)
@@ -246,24 +288,66 @@ export function buildPlanProjection(
   }
 
   const goalSummaries = input.goals.map(goal => {
-    let etaMonth: MonthKey | undefined;
+
+    // --- Cents-only reachability logic ---
+    let etaMonth: MonthKey | undefined = undefined;
     let reachable = false;
 
-    const current = goal.currentAmount ?? 0;
+    // Defensive: always use cents
+    const currentCents = toCents(goal.currentAmountCents ?? goal.currentAmount);
+    const targetCents = toCents(goal.targetAmountCents ?? (goal.targetAmount ? goal.targetAmount * 100 : 0));
+    const monthlyCents = toCents(goal.monthlyContributionCents ?? (goal.monthlyContribution ? goal.monthlyContribution * 100 : 0));
+    const targetDateRaw = goal.targetDate;
+    const parsedTargetDate = goal.targetDate ? new Date(goal.targetDate) : undefined;
+    const now = new Date();
 
-    if (goal.monthlyContribution) {
-      const remaining = goal.targetAmount - current;
+    // monthsRemaining: if targetDate exists, calculate months diff, else use settings.forecastMonths
+    let monthsRemaining = settings.forecastMonths;
+    if (parsedTargetDate && !isNaN(parsedTargetDate.getTime())) {
+      // monthKeys[0] is YYYY-MM, parsedTargetDate is Date
+      const start = new Date(monthKeys[0] + '-01');
+      let months = (parsedTargetDate.getFullYear() - start.getFullYear()) * 12 + (parsedTargetDate.getMonth() - start.getMonth()) + 1;
+      monthsRemaining = Math.max(1, Math.min(settings.forecastMonths, months));
+    }
 
-      if (remaining <= 0) {
-        etaMonth = monthKeys[0];
-        reachable = true;
-      } else {
-        const monthsNeeded = Math.ceil(remaining / goal.monthlyContribution);
-        if (monthsNeeded <= settings.forecastMonths) {
-          etaMonth = monthKeys[monthsNeeded - 1];
-          reachable = true;
-        }
-      }
+    const remainingCents = Math.max(0, targetCents - currentCents);
+    let requiredMonthlyCents = 0;
+    if (remainingCents > 0 && monthsRemaining > 0) {
+      requiredMonthlyCents = Math.ceil(remainingCents / monthsRemaining);
+    }
+
+    if (remainingCents === 0) {
+      reachable = true;
+      etaMonth = monthKeys[0];
+    } else if (monthlyCents > 0) {
+      const monthsNeeded = Math.ceil(remainingCents / monthlyCents);
+      reachable = monthsNeeded <= monthsRemaining;
+      etaMonth = reachable ? monthKeys[monthsNeeded - 1] : undefined;
+    } else {
+      reachable = false;
+      etaMonth = undefined;
+    }
+
+    // Debug log after reachability calculation
+    const isUrlaub = (goal.name ?? '').trim().toLowerCase() === 'urlaub';
+    if (isUrlaub) {
+      // eslint-disable-next-line no-console
+      console.log('[DEBUG:Urlaub]', {
+        goalId: goal.id,
+        name: goal.name,
+        targetAmountCents: targetCents,
+        currentAmountCents: currentCents,
+        remainingCents,
+        monthlyContributionCents: monthlyCents,
+        targetDateRaw,
+        parsedTargetDate,
+        now,
+        monthsRemaining,
+        settingsForecastMonths: settings.forecastMonths,
+        requiredMonthlyCents,
+        reachable,
+        etaMonth,
+      });
     }
 
     return { goalId: goal.id, etaMonth, reachable };

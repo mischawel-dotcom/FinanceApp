@@ -1,3 +1,55 @@
+  it("edits a goal and updates UI immediately", async () => {
+    // Seed store with one goal and working updateGoal action
+    const g1 = { id: "g1", name: "Urlaub", priority: "medium", targetAmountCents: 10000, currentAmountCents: 1000, monthlyContributionCents: 50000 };
+    useAppStore.setState({
+      goals: [g1],
+      updateGoal: async (id: string, updatedFields: any) => {
+        useAppStore.setState((state) => ({
+          goals: state.goals.map((g) => g.id === id ? { ...g, ...updatedFields } : g)
+        }));
+      },
+    }, true);
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <GoalsPage />
+      </MemoryRouter>
+    );
+    // Assert goal present
+    const goalRow = screen.getByTestId("goal-row-g1");
+    expect(goalRow).toBeInTheDocument();
+    // Check that monthly savings is shown in the card
+    const savingsRow = within(goalRow).getByTestId('goal-monthly-savings-row');
+    expect(savingsRow).toHaveTextContent(/monatliche sparrate/i);
+    expect(savingsRow).toHaveTextContent(/500,00\s*€/i);
+    // Find edit button
+    const editBtn = within(goalRow).getByText("Bearbeiten", { selector: 'button' });
+    await act(async () => {
+      editBtn.click();
+    });
+    // Wait for dialog
+    const dialog = await screen.findByRole('dialog');
+    // Try to find Zielbetrag input robustly
+    let zielbetragInput =
+      within(dialog).queryByRole('spinbutton', { name: /zielbetrag/i }) ??
+      within(dialog).queryByRole('textbox', { name: /zielbetrag/i });
+    if (!zielbetragInput) {
+      // fallback: first numeric/text input in dialog
+      const inputs = within(dialog).getAllByRole((role) => role === 'spinbutton' || role === 'textbox');
+      zielbetragInput = inputs[0];
+    }
+    // Change value
+    const { fireEvent } = require('@testing-library/react');
+    fireEvent.change(zielbetragInput, { target: { value: '200' } });
+    // Click Aktualisieren/Speichern
+    const saveBtn = within(dialog).getByRole('button', { name: /aktualisieren|speichern/i });
+    fireEvent.click(saveBtn);
+    // Assert updated value in UI (euro format)
+    await waitFor(() => {
+      const updatedRow = screen.getByTestId("goal-row-g1");
+      expect(updatedRow).toBeInTheDocument();
+      expect(within(updatedRow).getByText(/200[,\.]00\s*€/)).toBeInTheDocument();
+    });
+  });
 
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi } from "vitest";

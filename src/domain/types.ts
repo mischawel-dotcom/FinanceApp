@@ -95,7 +95,7 @@ export type GoalPriority = 1 | 2 | 3 | 4 | 5;
 export interface Goal {
   id: string;
   name: string;
-  targetAmount: Money;
+  targetAmount?: Money;
   currentAmount?: Money;
   wishDate?: IsoDate; // desired date, not a hard deadline
   priority: GoalPriority;
@@ -107,6 +107,7 @@ export interface Goal {
   targetAmountCents?: number;
   currentAmountCents?: number;
   monthlyContributionCents?: number;
+  targetDate?: string | Date;
 }
 
 /**

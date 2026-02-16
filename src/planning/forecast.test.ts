@@ -1,3 +1,20 @@
+          it('goal is reachable when monthsNeeded === forecastMonths and contribution >= required', () => {
+            const goal = {
+              id: 'g1',
+              name: 'Urlaub',
+              targetAmount: 150000,
+              currentAmount: 0,
+              monthlyContribution: 40000,
+              // targetAmountCents and monthlyContributionCents are not required for this test, logic uses monthlyContribution
+            };
+            const settings = { forecastMonths: 24, startMonth: '2026-02' };
+            const input = mkInput({ goals: [goal] });
+            const proj = buildPlanProjection(input, settings);
+            // Find the goal summary for 'g1'
+            const summary = proj.goals.find(g => g.goalId === 'g1');
+            expect(summary).toBeDefined();
+            expect(summary?.reachable).toBe(true);
+          });
         it('past one-time expense does not affect current or future month buckets', () => {
           const incomes = [
             { id: 'i1', name: 'Salary', amount: 100000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },

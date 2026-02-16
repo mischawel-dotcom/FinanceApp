@@ -106,8 +106,12 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         description: formData.description || undefined,
         monthlyContributionCents,
       };
-      console.log("GoalForm calling createGoal with payload:", payload);
-      await onSubmit(payload);
+      console.log("GoalForm calling onSubmit with payload:", payload);
+      if (initialData?.id) {
+        await onSubmit({ ...payload, id: initialData.id });
+      } else {
+        await onSubmit(payload);
+      }
     } catch (err) {
       console.error("Goal create failed:", err);
       setSubmitError(err instanceof Error ? err.message : String(err));
