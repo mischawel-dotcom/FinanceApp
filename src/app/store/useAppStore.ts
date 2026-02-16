@@ -262,9 +262,79 @@ export const useAppStore = create<AppStore>()(
       deleteExpense: async (id: string) => {
         set((state) => ({ expenses: state.expenses.filter((e: any) => e.id !== id) }));
       },
-      createAsset: async () => {},
-      updateAsset: async () => {},
-      deleteAsset: async () => {},
+      createAsset: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log("createAsset START", payload);
+        }
+        try {
+          const now = new Date();
+          const newAsset = {
+            ...payload,
+            id: `asset${Date.now()}`,
+            createdAt: now,
+            updatedAt: now,
+          };
+          set((state) => ({
+            assets: [...state.assets, newAsset],
+          }));
+          if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console
+            console.log("createAsset SUCCESS", newAsset);
+          }
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console
+            console.log("createAsset FAIL", err);
+          }
+          throw err;
+        }
+      },
+      updateAsset: async (payload: any) => {
+        if (!payload?.id) return;
+        try {
+          // Update in repository/storage
+          // Use static import for assetRepository so Vitest can mock it
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          // const repo = require('../../data/repositories').assetRepository;
+          // Use static import instead:
+          // (import at top of file)
+          const repo = assetRepository;
+          if (repo && typeof repo.update === 'function') {
+            await repo.update(payload.id, payload);
+          }
+        } catch (err) {
+          console.error('updateAsset failed:', err);
+        }
+        // Update in state immediately
+        set((state) => ({
+          assets: (state.assets ?? []).map((a: any) => a.id === payload.id ? { ...a, ...payload, updatedAt: new Date() } : a),
+        }));
+      },
+      deleteAsset: async (id: string) => {
+        if (!id) return;
+        try {
+          // Remove from repository/storage
+          // Use static import for assetRepository so Vitest can mock it
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          // const repo = require('../../data/repositories').assetRepository;
+          // Use static import instead:
+          // (import at top of file)
+          const repo = assetRepository;
+          // Defensive: normalize id
+          const assets = get().assets ?? [];
+          const asset = assets.find((a: any) => a.id === id);
+          if (!asset) return; // idempotent: nothing to delete
+          // Remove from repo
+          if (repo && typeof repo.delete === 'function') {
+            await repo.delete(id);
+          }
+        } catch (err) {
+          console.error('deleteAsset failed:', err);
+        }
+        // Remove from state immediately
+        set((state) => ({ assets: (state.assets ?? []).filter((a: any) => a.id !== id) }));
+      },
       createGoal: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
         const now = new Date();
         const newGoal = {

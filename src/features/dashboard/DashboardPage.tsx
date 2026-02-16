@@ -45,9 +45,10 @@ export default function DashboardPage() {
   const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100).toFixed(1) : '0';
 
   // Assets
-  const totalAssetValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
-  const totalAssetInvestment = assets.reduce((sum, asset) => sum + asset.initialInvestment, 0);
-  const assetGain = totalAssetValue - totalAssetInvestment;
+  // Convert euro values to integer cents for dashboard display
+  const totalAssetValueCents = Math.round(assets.reduce((sum, asset) => sum + asset.currentValue, 0) * 100);
+  const totalAssetInvestmentCents = Math.round(assets.reduce((sum, asset) => sum + asset.initialInvestment, 0) * 100);
+  const assetGainCents = totalAssetValueCents - totalAssetInvestmentCents;
 
   // Goals (cents-only, robust)
   const totalGoalTarget = goals.reduce(
@@ -134,10 +135,10 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Vermögen</div>
-          <div className="text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValue)}</div>
-          {assetGain !== 0 && (
-            <div className={`text-xs mt-1 ${assetGain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {assetGain >= 0 ? '+' : ''}{formatCentsEUR(assetGain)} Gewinn
+          <div className="text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValueCents)}</div>
+          {assetGainCents !== 0 && (
+            <div className={`text-xs mt-1 ${assetGainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+              {assetGainCents >= 0 ? '+' : ''}{formatCentsEUR(assetGainCents)} Gewinn
             </div>
           )}
         </Card>

@@ -22,11 +22,14 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     type: initialData?.type || 'savings' as AssetType,
-    currentValue: initialData?.currentValue?.toString() || '',
-    initialInvestment: initialData?.initialInvestment?.toString() || '',
+    currentValue: initialData?.currentValue !== undefined ? initialData.currentValue.toString() : '',
+    initialInvestment: initialData?.initialInvestment !== undefined ? initialData.initialInvestment.toString() : '',
     purchaseDate: initialData?.purchaseDate ? format(initialData.purchaseDate, 'yyyy-MM-dd') : '',
     notes: initialData?.notes || '',
   });
+
+  // Dev-only: track submit
+  const [submitHit, setSubmitHit] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,17 +54,29 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
+    setSubmitHit(true);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("AssetForm submit handler HIT");
+    }
     if (!validate()) return;
-    
-    onSubmit({
+    // Cents-only contract: parse euro fields
+    const payload = {
       name: formData.name,
       type: formData.type,
       currentValue: parseFloat(formData.currentValue),
       initialInvestment: parseFloat(formData.initialInvestment),
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       notes: formData.notes || undefined,
-    });
+      ...(initialData?.id ? { id: initialData.id } : {}),
+      ...(initialData?.createdAt ? { createdAt: initialData.createdAt } : {}),
+      ...(initialData?.updatedAt ? { updatedAt: new Date() } : {}),
+    };
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("AssetForm calling createAsset/updateAsset with payload:", payload);
+    }
+    onSubmit(payload);
   };
 
   const gain = parseFloat(formData.currentValue || '0') - parseFloat(formData.initialInvestment || '0');
@@ -146,6 +161,11 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
           {initialData ? 'Aktualisieren' : 'Erstellen'}
         </Button>
       </div>
+      {import.meta.env.DEV && (
+        <div className="text-xs text-gray-500 mt-2">
+          <div>Submit triggered: {submitHit ? "yes" : "no"}</div>
+        </div>
+      )}
     </form>
   );
 }

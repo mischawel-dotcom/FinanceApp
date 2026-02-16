@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { formatCentsEUR } from "../../ui/formatMoney";
 
 // Minimal dashboard selector logic for test
-function getDashboardGoalTotals(goals) {
+function getDashboardGoalTotals(goals: Array<{ targetAmountCents: number, currentAmountCents: number }>) {
   const totalTargetCents = goals.reduce(
     (sum, goal) => sum + (typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0),
     0

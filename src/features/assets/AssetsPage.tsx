@@ -17,22 +17,24 @@ export default function AssetsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
-  const handleCreate = async () => {
-    await createAsset();
+  const handleCreate = async (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
+    await createAsset(payload);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("AssetsPage: assets after create", assets);
+    }
     setIsModalOpen(false);
   };
 
-  const handleUpdate = async () => {
-    if (editingAsset) {
-      await updateAsset();
-      setEditingAsset(null);
-      setIsModalOpen(false);
-    }
+  const handleUpdate = async (payload: Asset) => {
+    await updateAsset(payload);
+    setEditingAsset(null);
+    setIsModalOpen(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (id: string) => {
     if (confirm('Anlage wirklich löschen?')) {
-      await deleteAsset();
+      await deleteAsset(id);
     }
   };
 
@@ -111,7 +113,7 @@ export default function AssetsPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditModal(asset)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={handleDelete}>
+          <Button size="sm" variant="danger" onClick={() => handleDelete(asset.id)}>
             Löschen
           </Button>
         </div>
