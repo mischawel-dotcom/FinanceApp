@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AppErrorBoundary from '../errors/AppErrorBoundary';
 import { Link, useLocation } from 'react-router-dom';
 
 interface NavItem {
@@ -109,7 +110,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
+        <AppErrorBoundary>
+          {children}
+        </AppErrorBoundary>
       </main>
 
       {/* Footer */}

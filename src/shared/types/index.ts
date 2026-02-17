@@ -97,8 +97,9 @@ export interface Asset {
   id: string;
   name: string;
   type: AssetType;
-  currentValue: number;
-  initialInvestment: number;
+  costBasisCents: number; // Summe der Einzahlungen (Pflichtfeld)
+  marketValueCents?: number; // Optional: manuell gepflegter Marktwert
+  lastMarketValueUpdate?: string; // ISO-String, optional
   purchaseDate?: Date;
   notes?: string;
   createdAt: Date;

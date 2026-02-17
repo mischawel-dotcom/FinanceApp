@@ -146,9 +146,46 @@ class AssetRepositoryImpl extends BaseRepositoryImpl<Asset> implements AssetRepo
     super('finance-app:assets');
   }
 
+  // Migration: Robust gegen alte Felder (valueCents, currentValue, initialInvestment)
+  async getAll(): Promise<Asset[]> {
+    const items = await super.getAll();
+    let repaired = false;
+    for (const asset of items) {
+      // costBasisCents: robust aus alten Feldern ableiten
+      if (asset.costBasisCents === undefined) {
+        if (typeof asset.valueCents === 'number') {
+          asset.costBasisCents = asset.valueCents;
+          delete asset.valueCents;
+          repaired = true;
+        } else if (typeof asset.currentValue === 'number') {
+          asset.costBasisCents = Math.round(asset.currentValue * 100);
+          delete asset.currentValue;
+          repaired = true;
+        } else if (typeof asset.initialInvestment === 'number') {
+          asset.costBasisCents = Math.round(asset.initialInvestment * 100);
+          delete asset.initialInvestment;
+          repaired = true;
+        } else {
+          asset.costBasisCents = 0;
+          repaired = true;
+        }
+      }
+      // Niemals marketValueCents automatisch setzen
+      if (asset.marketValueCents !== undefined && typeof asset.marketValueCents !== 'number') {
+        delete asset.marketValueCents;
+        repaired = true;
+      }
+    }
+    if (repaired) {
+      await this.storage.set(this.storageKey, items);
+    }
+    return items;
+  }
+
   async getTotalValue(): Promise<number> {
     const items = await this.getAll();
-    return items.reduce((sum, asset) => sum + asset.currentValue, 0);
+    // Portfolio-Wert: Summe der marketValueCents (falls vorhanden), sonst costBasisCents
+    return items.reduce((sum, asset) => sum + (typeof asset.marketValueCents === 'number' ? asset.marketValueCents : asset.costBasisCents), 0);
   }
 }
 

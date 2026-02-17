@@ -60,38 +60,55 @@ export default function AssetsPage() {
     return labels[type] || type;
   };
 
-  const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
-  const totalInvestment = assets.reduce((sum, asset) => sum + asset.initialInvestment, 0);
-  const totalGain = totalValue - totalInvestment;
-  const totalGainPercent = totalInvestment > 0 ? ((totalGain / totalInvestment) * 100).toFixed(2) : '0';
+  // Portfolio-Wert: Summe der marketValueCents (falls vorhanden), sonst costBasisCents
+  const totalValue = assets.reduce(
+    (sum, asset) => sum + (typeof asset.marketValueCents === 'number' ? asset.marketValueCents : asset.costBasisCents),
+    0
+  );
+  const totalCostBasis = assets.reduce((sum, asset) => sum + asset.costBasisCents, 0);
+  const totalGain = totalValue - totalCostBasis;
+  const totalGainPercent = totalCostBasis > 0 ? ((totalGain / totalCostBasis) * 100).toFixed(2) : '0';
 
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'type', label: 'Art', render: (asset: Asset) => getAssetTypeLabel(asset.type) },
-    { 
-      key: 'currentValue', 
-      label: 'Aktueller Wert', 
-      render: (asset: Asset) => (
-        <span className="font-semibold">{asset.currentValue.toFixed(2)} €</span>
-      )
+    {
+      key: 'costBasisCents',
+      label: 'Kostenbasis (Eingezahlt)',
+      render: (asset: Asset) => <span>{(asset.costBasisCents / 100).toFixed(2)} €</span>,
     },
-    { 
-      key: 'initialInvestment', 
-      label: 'Investition', 
-      render: (asset: Asset) => `${asset.initialInvestment.toFixed(2)} €`
+    {
+      key: 'monthlyContributionCents',
+      label: 'Sparrate (Monat)',
+      render: (asset: Asset) =>
+        typeof asset.monthlyContributionCents === 'number' && asset.monthlyContributionCents > 0
+          ? <span>{(asset.monthlyContributionCents / 100).toFixed(2)} €</span>
+          : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'marketValueCents',
+      label: 'Marktwert',
+      render: (asset: Asset) =>
+        typeof asset.marketValueCents === 'number' ? (
+          <span>
+            {(asset.marketValueCents / 100).toFixed(2)} €
+            <span className="ml-1 text-xs text-gray-500">(manuell gepflegt)</span>
+          </span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
     },
     {
       key: 'gain',
       label: 'Gewinn/Verlust',
       render: (asset: Asset) => {
-        const gain = asset.currentValue - asset.initialInvestment;
-        const percent = asset.initialInvestment > 0 
-          ? ((gain / asset.initialInvestment) * 100).toFixed(2)
-          : '0';
+        const value = typeof asset.marketValueCents === 'number' ? asset.marketValueCents : asset.costBasisCents;
+        const gain = value - asset.costBasisCents;
+        const percent = asset.costBasisCents > 0 ? ((gain / asset.costBasisCents) * 100).toFixed(2) : '0';
         return (
           <div className="text-sm">
             <div className={`font-semibold ${gain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {gain >= 0 ? '+' : ''}{gain.toFixed(2)} €
+              {gain >= 0 ? '+' : ''}{(gain / 100).toFixed(2)} €
             </div>
             <div className="text-gray-500 text-xs">
               {gain >= 0 ? '+' : ''}{percent}%
@@ -134,16 +151,16 @@ export default function AssetsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <div className="text-sm text-gray-600 mb-1">Gesamtwert Portfolio</div>
-          <div className="text-2xl font-bold text-gray-900">{totalValue.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-gray-900">{(totalValue / 100).toFixed(2)} €</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Gesamtinvestition</div>
-          <div className="text-2xl font-bold text-gray-900">{totalInvestment.toFixed(2)} €</div>
+          <div className="text-sm text-gray-600 mb-1">Gesamte Kostenbasis</div>
+          <div className="text-2xl font-bold text-gray-900">{(totalCostBasis / 100).toFixed(2)} €</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Gesamt Gewinn/Verlust</div>
           <div className={`text-2xl font-bold ${totalGain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {totalGain >= 0 ? '+' : ''}{totalGain.toFixed(2)} €
+            {totalGain >= 0 ? '+' : ''}{(totalGain / 100).toFixed(2)} €
             <span className="text-sm ml-2">({totalGain >= 0 ? '+' : ''}{totalGainPercent}%)</span>
           </div>
         </Card>
@@ -159,7 +176,11 @@ export default function AssetsPage() {
         }
       >
         <Table
-          data={assets.sort((a, b) => b.currentValue - a.currentValue)}
+          data={assets.slice().sort((a, b) => {
+            const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
+            const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
+            return vb - va;
+          })}
           columns={columns}
           emptyMessage="Noch keine Anlagen vorhanden"
         />

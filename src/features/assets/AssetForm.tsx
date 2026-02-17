@@ -23,8 +23,8 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     type: initialData?.type || 'savings' as AssetType,
-    currentValue: initialData?.currentValue !== undefined ? initialData.currentValue.toString() : '',
-    initialInvestment: initialData?.initialInvestment !== undefined ? initialData.initialInvestment.toString() : '',
+    costBasis: initialData?.costBasisCents !== undefined ? centsToEuroInput(initialData.costBasisCents) : '',
+    marketValue: initialData?.marketValueCents !== undefined ? centsToEuroInput(initialData.marketValueCents) : '',
     purchaseDate: initialData?.purchaseDate ? format(initialData.purchaseDate, 'yyyy-MM-dd') : '',
     notes: initialData?.notes || '',
     monthlyContribution: initialData?.monthlyContributionCents !== undefined ? centsToEuroInput(initialData.monthlyContributionCents) : '',
@@ -37,19 +37,18 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
     if (!formData.name.trim()) {
       newErrors.name = 'Name ist erforderlich';
     }
-    
-    if (!formData.currentValue || parseFloat(formData.currentValue) < 0) {
-      newErrors.currentValue = 'Aktueller Wert muss >= 0 sein';
+    if (!formData.costBasis || isNaN(Number(formData.costBasis)) || parseFloat(formData.costBasis) < 0) {
+      newErrors.costBasis = 'Kostenbasis muss >= 0 sein';
     }
-    
-    if (!formData.initialInvestment || parseFloat(formData.initialInvestment) < 0) {
-      newErrors.initialInvestment = 'Ursprüngliche Investition muss >= 0 sein';
+    if (formData.marketValue && (isNaN(Number(formData.marketValue)) || parseFloat(formData.marketValue) < 0)) {
+      newErrors.marketValue = 'Marktwert muss >= 0 sein';
     }
-    
+    if (formData.monthlyContribution && (isNaN(Number(formData.monthlyContribution)) || parseFloat(formData.monthlyContribution) < 0)) {
+      newErrors.monthlyContribution = 'Monatlicher Sparbeitrag muss >= 0 sein';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -63,27 +62,21 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
     }
     if (!validate()) return;
     // Cents-only contract: parse euro fields
-    const payload = {
+    const payload: any = {
       name: formData.name,
       type: formData.type,
-      currentValue: parseFloat(formData.currentValue),
-      initialInvestment: parseFloat(formData.initialInvestment),
+      costBasisCents: euroInputToCents(formData.costBasis),
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       notes: formData.notes || undefined,
-      monthlyContributionCents: euroInputToCents(formData.monthlyContribution),
+      monthlyContributionCents: euroInputToCents(formData.monthlyContribution) > 0 ? euroInputToCents(formData.monthlyContribution) : 0,
       ...(initialData?.id ? { id: initialData.id } : {}),
       ...(initialData?.createdAt ? { createdAt: initialData.createdAt } : {}),
       ...(initialData?.updatedAt ? { updatedAt: new Date() } : {}),
     };
-          <Input
-            label="Monatlicher Sparbeitrag (€)"
-            type="number"
-            step="0.01"
-            value={formData.monthlyContribution}
-            onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
-            placeholder="0.00"
-            helperText="Optional. Monatlicher Sparplan für diese Anlage."
-          />
+    if (formData.marketValue) {
+      payload.marketValueCents = euroInputToCents(formData.marketValue);
+      payload.lastMarketValueUpdate = new Date().toISOString();
+    }
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("AssetForm calling createAsset/updateAsset with payload:", payload);
@@ -91,10 +84,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
     onSubmit(payload);
   };
 
-  const gain = parseFloat(formData.currentValue || '0') - parseFloat(formData.initialInvestment || '0');
-  const gainPercent = formData.initialInvestment && parseFloat(formData.initialInvestment) > 0
-    ? ((gain / parseFloat(formData.initialInvestment)) * 100).toFixed(2)
-    : '0';
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,49 +106,41 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
         options={assetTypeOptions}
       />
 
+
+
+      <Input
+        label="Eingezahlt / Kostenbasis (€)"
+        type="number"
+        step="0.01"
+        required
+        value={formData.costBasis}
+        onChange={(e) => setFormData({ ...formData, costBasis: e.target.value })}
+        error={errors.costBasis}
+        placeholder="0.00"
+        helperText="Summe aller Einzahlungen (Pflichtfeld)"
+      />
+
       <Input
         label="Monatlicher Sparbeitrag (€)"
         type="number"
         step="0.01"
         value={formData.monthlyContribution}
         onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
+        error={errors.monthlyContribution}
         placeholder="0.00"
-        helperText="Optional. Monatlicher Sparplan für diese Anlage."
+        helperText="Optional. Wird für die Planung verwendet."
       />
 
       <Input
-        label="Aktueller Wert (€)"
+        label="Marktwert (€) (manuell)"
         type="number"
         step="0.01"
-        required
-        value={formData.currentValue}
-        onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
-        error={errors.currentValue}
+        value={formData.marketValue}
+        onChange={(e) => setFormData({ ...formData, marketValue: e.target.value })}
+        error={errors.marketValue}
         placeholder="0.00"
+        helperText="Optional. Nur ausfüllen, wenn ein Marktwert vorliegt."
       />
-
-      <Input
-        label="Ursprüngliche Investition (€)"
-        type="number"
-        step="0.01"
-        required
-        value={formData.initialInvestment}
-        onChange={(e) => setFormData({ ...formData, initialInvestment: e.target.value })}
-        error={errors.initialInvestment}
-        placeholder="0.00"
-        helperText="Wie viel Geld wurde insgesamt eingezahlt?"
-      />
-
-      {formData.currentValue && formData.initialInvestment && (
-        <div className="p-3 bg-gray-50 rounded-md">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Gewinn/Verlust:</span>
-            <span className={`font-semibold ${gain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {gain >= 0 ? '+' : ''}{gain.toFixed(2)} € ({gain >= 0 ? '+' : ''}{gainPercent}%)
-            </span>
-          </div>
-        </div>
-      )}
 
       <Input
         label="Kaufdatum"

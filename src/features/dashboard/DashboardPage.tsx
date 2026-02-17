@@ -48,11 +48,17 @@ export default function DashboardPage() {
     setFlowKpis(kpis);
   }, []);
 
-  // Assets
-  // Convert euro values to integer cents for dashboard display
-  const totalAssetValueCents = Math.round(assets.reduce((sum, asset) => sum + asset.currentValue, 0) * 100);
-  const totalAssetInvestmentCents = Math.round(assets.reduce((sum, asset) => sum + asset.initialInvestment, 0) * 100);
-  const assetGainCents = totalAssetValueCents - totalAssetInvestmentCents;
+  // Assets (robust: neue Architektur)
+  const safeAssets = assets ?? [];
+  const totalCostBasisCents = safeAssets.reduce((sum, a) => sum + (a.costBasisCents ?? 0), 0);
+  const totalMarketValueCents = safeAssets.reduce((sum, a) => sum + (a.marketValueCents ?? 0), 0);
+  const hasAnyMarketValue = safeAssets.some(a => typeof a.marketValueCents === "number");
+  const totalAssetValueCents = hasAnyMarketValue ? totalMarketValueCents : totalCostBasisCents;
+  // Gewinn nur für Assets mit marketValueCents, sonst 0
+  const assetGainCents = safeAssets.reduce((sum, a) => {
+    if (typeof a.marketValueCents !== "number") return sum;
+    return sum + (a.marketValueCents - (a.costBasisCents ?? 0));
+  }, 0);
 
   // Goals (robust, wie im Block 'Wichtigste Ziele')
   const safeGoals = goals ?? [];
