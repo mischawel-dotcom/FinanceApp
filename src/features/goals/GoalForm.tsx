@@ -1,10 +1,5 @@
 import { useState, FormEvent } from 'react';
 // Minimal euro to cents util
-function euroToCents(euro: string | number): number {
-  const n = typeof euro === 'string' ? parseFloat(euro) : euro;
-  if (!isNaN(n) && isFinite(n)) return Math.round(n * 100);
-  return 0;
-}
 import { format } from 'date-fns';
 import type { FinancialGoal, GoalPriority } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
@@ -23,22 +18,20 @@ const priorityOptions: { value: GoalPriority; label: string }[] = [
 ];
 
 export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
-  if (process.env.NODE_ENV !== "production" && initialData) {
+  if (import.meta.env.DEV && initialData) {
     // Dev-only: log incoming goal object and relevant fields
     // eslint-disable-next-line no-console
     console.log("[GoalForm] initialData (edit mode):", initialData);
     // eslint-disable-next-line no-console
-    console.log("[GoalForm] initialData.targetAmountCents:", initialData.targetAmountCents);
-    // eslint-disable-next-line no-console
     console.log("[GoalForm] initialData.targetAmount:", initialData.targetAmount);
   }
 
-  // Prefer cents field if present, fallback to euro field
-  const initialTargetAmount = initialData?.targetAmountCents !== undefined
-    ? (initialData.targetAmountCents / 100).toString()
-    : (initialData?.targetAmount?.toString() || '');
+  // Use targetAmount (EUR) directly
+  const initialTargetAmount = initialData?.targetAmount !== undefined
+    ? initialData.targetAmount.toString()
+    : '';
 
-  if (process.env.NODE_ENV !== "production" && initialData) {
+  if (import.meta.env.DEV && initialData) {
     // eslint-disable-next-line no-console
     console.log("[GoalForm] Derived initialTargetAmount for form:", initialTargetAmount);
   }
@@ -95,23 +88,19 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           monthlyContributionCents = Math.round(euro * 100);
         }
       }
-      // Cents-only contract for target amount
-      const targetAmountCents = euroToCents(formData.targetAmount);
+      // Use targetAmount (EUR) directly
+      const targetAmount = parseFloat(formData.targetAmount) || 0;
       const payload = {
         name: formData.name,
-        targetAmountCents,
-        currentAmount: parseFloat(formData.currentAmount), // keep as-is unless domain requires currentAmountCents
+        targetAmount,
+        currentAmount: parseFloat(formData.currentAmount),
         targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
         priority: formData.priority,
         description: formData.description || undefined,
         monthlyContributionCents,
       };
       console.log("GoalForm calling onSubmit with payload:", payload);
-      if (initialData?.id) {
-        await onSubmit({ ...payload, id: initialData.id });
-      } else {
-        await onSubmit(payload);
-      }
+      await onSubmit(payload);
     } catch (err) {
       console.error("Goal create failed:", err);
       setSubmitError(err instanceof Error ? err.message : String(err));
@@ -234,7 +223,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
       {submitError && (
         <p role="alert" className="text-red-600 text-sm mb-2">{submitError}</p>
       )}
-      {process.env.NODE_ENV !== "production" && (
+      {import.meta.env.DEV && (
         <div className="text-xs text-gray-500 mt-2">
           <div>Submit triggered: {submitHit ? "yes" : "no"}</div>
           {Object.keys(errors).length > 0 && (

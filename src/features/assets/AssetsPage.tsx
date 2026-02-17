@@ -4,6 +4,7 @@ import { useAppStore } from '@/app/store/useAppStore';
 import type { Asset } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
 import { AssetForm } from './AssetForm';
+import { asCentsSafe } from '@shared/utils/money';
 
 export default function AssetsPage() {
   const { assets, createAsset, updateAsset, deleteAsset, loadData } = useAppStore();
@@ -17,8 +18,8 @@ export default function AssetsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
-  const handleCreate = async (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createAsset(payload);
+  const handleCreate = async (data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
+    await createAsset(data);
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("AssetsPage: assets after create", assets);
@@ -26,7 +27,13 @@ export default function AssetsPage() {
     setIsModalOpen(false);
   };
 
-  const handleUpdate = async (payload: Asset) => {
+  const handleUpdate = async (data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingAsset) return;
+    // Merge form data with existing asset metadata
+    const payload: Asset = {
+      ...editingAsset,
+      ...data,
+    };
     await updateAsset(payload);
     setEditingAsset(null);
     setIsModalOpen(false);
@@ -62,11 +69,13 @@ export default function AssetsPage() {
 
   // Portfolio-Wert: Summe der marketValueCents (falls vorhanden), sonst costBasisCents
   const totalValue = assets.reduce(
-    (sum, asset) => sum + (typeof asset.marketValueCents === 'number' ? asset.marketValueCents : asset.costBasisCents),
+    (sum, asset) => sum + (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents)
+      ? asCentsSafe(asset.marketValueCents)
+      : asCentsSafe(asset.costBasisCents)),
     0
   );
-  const totalCostBasis = assets.reduce((sum, asset) => sum + asset.costBasisCents, 0);
-  const totalGain = totalValue - totalCostBasis;
+  const totalCostBasis = assets.reduce((sum, asset) => sum + asCentsSafe(asset.costBasisCents), 0);
+  const totalGain = asCentsSafe(totalValue) - asCentsSafe(totalCostBasis);
   const totalGainPercent = totalCostBasis > 0 ? ((totalGain / totalCostBasis) * 100).toFixed(2) : '0';
 
   const columns = [
@@ -75,23 +84,23 @@ export default function AssetsPage() {
     {
       key: 'costBasisCents',
       label: 'Kostenbasis (Eingezahlt)',
-      render: (asset: Asset) => <span>{(asset.costBasisCents / 100).toFixed(2)} €</span>,
+      render: (asset: Asset) => <span>{(asCentsSafe(asset.costBasisCents) / 100).toFixed(2)} €</span>,
     },
     {
       key: 'monthlyContributionCents',
       label: 'Sparrate (Monat)',
       render: (asset: Asset) =>
-        typeof asset.monthlyContributionCents === 'number' && asset.monthlyContributionCents > 0
-          ? <span>{(asset.monthlyContributionCents / 100).toFixed(2)} €</span>
+        asCentsSafe(asset.monthlyContributionCents) > 0
+          ? <span>{(asCentsSafe(asset.monthlyContributionCents) / 100).toFixed(2)} €</span>
           : <span className="text-gray-400">—</span>,
     },
     {
       key: 'marketValueCents',
       label: 'Marktwert',
       render: (asset: Asset) =>
-        typeof asset.marketValueCents === 'number' ? (
+        typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents) ? (
           <span>
-            {(asset.marketValueCents / 100).toFixed(2)} €
+            {(asCentsSafe(asset.marketValueCents) / 100).toFixed(2)} €
             <span className="ml-1 text-xs text-gray-500">(manuell gepflegt)</span>
           </span>
         ) : (
@@ -102,16 +111,25 @@ export default function AssetsPage() {
       key: 'gain',
       label: 'Gewinn/Verlust',
       render: (asset: Asset) => {
-        const value = typeof asset.marketValueCents === 'number' ? asset.marketValueCents : asset.costBasisCents;
-        const gain = value - asset.costBasisCents;
-        const percent = asset.costBasisCents > 0 ? ((gain / asset.costBasisCents) * 100).toFixed(2) : '0';
+        const costBasisCentsSafe = asCentsSafe(asset.costBasisCents);
+        const marketValueCentsSafe = (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents))
+          ? asCentsSafe(asset.marketValueCents)
+          : undefined;
+        let gainCents = 0;
+        let gainPercent = 0;
+        if (typeof marketValueCentsSafe === 'number') {
+          gainCents = marketValueCentsSafe - costBasisCentsSafe;
+          if (costBasisCentsSafe > 0) {
+            gainPercent = (gainCents / costBasisCentsSafe) * 100;
+          }
+        }
         return (
           <div className="text-sm">
-            <div className={`font-semibold ${gain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {gain >= 0 ? '+' : ''}{(gain / 100).toFixed(2)} €
+            <div className={`font-semibold ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+              {gainCents >= 0 ? '+' : ''}{(asCentsSafe(gainCents) / 100).toFixed(2)} €
             </div>
             <div className="text-gray-500 text-xs">
-              {gain >= 0 ? '+' : ''}{percent}%
+              {gainCents >= 0 ? '+' : ''}{Number.isFinite(gainPercent) ? gainPercent.toFixed(2) : '0'}%
             </div>
           </div>
         );

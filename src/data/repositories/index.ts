@@ -141,6 +141,17 @@ class ExpenseCategoryRepositoryImpl
 
 // ==================== ASSETS ====================
 
+// LegacyAsset type for migration/repair
+ type LegacyAsset = Asset & Partial<{
+   valueCents: unknown;
+   currentValue: unknown;
+   initialInvestment: unknown;
+   value: unknown;
+   costBasis: unknown;
+   monthlyContribution: unknown;
+   marketValue: unknown;
+ }>;
+
 class AssetRepositoryImpl extends BaseRepositoryImpl<Asset> implements AssetRepository {
   constructor() {
     super('finance-app:assets');
@@ -151,27 +162,33 @@ class AssetRepositoryImpl extends BaseRepositoryImpl<Asset> implements AssetRepo
     const items = await super.getAll();
     let repaired = false;
     for (const asset of items) {
-      // costBasisCents: robust aus alten Feldern ableiten
-      if (asset.costBasisCents === undefined) {
-        if (typeof asset.valueCents === 'number') {
-          asset.costBasisCents = asset.valueCents;
-          delete asset.valueCents;
+      const a = asset as LegacyAsset;
+      // costBasisCents: robust aus alten Feldern ableiten und absichern
+      if (!Number.isFinite(asset.costBasisCents)) {
+        if (typeof a.valueCents === 'number' && Number.isFinite(a.valueCents)) {
+          asset.costBasisCents = a.valueCents as number;
+          delete (a as any).valueCents;
           repaired = true;
-        } else if (typeof asset.currentValue === 'number') {
-          asset.costBasisCents = Math.round(asset.currentValue * 100);
-          delete asset.currentValue;
+        } else if (typeof a.currentValue === 'number' && Number.isFinite(a.currentValue)) {
+          asset.costBasisCents = Math.round(a.currentValue as number * 100);
+          delete (a as any).currentValue;
           repaired = true;
-        } else if (typeof asset.initialInvestment === 'number') {
-          asset.costBasisCents = Math.round(asset.initialInvestment * 100);
-          delete asset.initialInvestment;
+        } else if (typeof a.initialInvestment === 'number' && Number.isFinite(a.initialInvestment)) {
+          asset.costBasisCents = Math.round(a.initialInvestment as number * 100);
+          delete (a as any).initialInvestment;
           repaired = true;
         } else {
           asset.costBasisCents = 0;
           repaired = true;
         }
       }
-      // Niemals marketValueCents automatisch setzen
-      if (asset.marketValueCents !== undefined && typeof asset.marketValueCents !== 'number') {
+      // monthlyContributionCents absichern
+      if (!Number.isFinite(asset.monthlyContributionCents)) {
+        asset.monthlyContributionCents = 0;
+        repaired = true;
+      }
+      // marketValueCents absichern
+      if (asset.marketValueCents !== undefined && !Number.isFinite(asset.marketValueCents)) {
         delete asset.marketValueCents;
         repaired = true;
       }
@@ -191,6 +208,13 @@ class AssetRepositoryImpl extends BaseRepositoryImpl<Asset> implements AssetRepo
 
 // ==================== GOALS ====================
 
+// LegacyGoal type for migration/repair
+ type LegacyGoal = FinancialGoal & Partial<{
+   targetAmountCents: unknown;
+   currentAmountCents: unknown;
+   monthlyContribution: unknown;
+}>;
+
 class GoalRepositoryImpl extends BaseRepositoryImpl<FinancialGoal> implements GoalRepository {
   constructor() {
     super('finance-app:goals');
@@ -201,22 +225,23 @@ class GoalRepositoryImpl extends BaseRepositoryImpl<FinancialGoal> implements Go
     const items = await super.getAll();
     let repaired = false;
     for (const goal of items) {
+      const g = goal as LegacyGoal;
       // Repair targetAmountCents
-      if (goal.targetAmountCents === undefined && typeof goal.targetAmount === 'number') {
-        goal.targetAmountCents = euroToCents(goal.targetAmount);
-        delete goal.targetAmount;
+      if (g.targetAmountCents === undefined && typeof g.targetAmount === 'number') {
+        g.targetAmountCents = euroToCents(g.targetAmount);
+        delete (g as any).targetAmount;
         repaired = true;
       }
       // Repair currentAmountCents
-      if (goal.currentAmountCents === undefined && typeof goal.currentAmount === 'number') {
-        goal.currentAmountCents = euroToCents(goal.currentAmount);
-        delete goal.currentAmount;
+      if (g.currentAmountCents === undefined && typeof g.currentAmount === 'number') {
+        g.currentAmountCents = euroToCents(g.currentAmount);
+        delete (g as any).currentAmount;
         repaired = true;
       }
       // Repair monthlyContributionCents
-      if (goal.monthlyContributionCents === undefined && typeof goal.monthlyContribution === 'number') {
-        goal.monthlyContributionCents = euroToCents(goal.monthlyContribution);
-        delete goal.monthlyContribution;
+      if (g.monthlyContributionCents === undefined && typeof g.monthlyContribution === 'number') {
+        g.monthlyContributionCents = euroToCents(g.monthlyContribution);
+        delete (g as any).monthlyContribution;
         repaired = true;
       }
     }

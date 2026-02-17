@@ -8,6 +8,7 @@ import { formatCentsEUR } from "@/ui/formatMoney";
 import { selectDashboardRecommendations } from "@/planning/recommendations";
 import { useNavigate } from "react-router-dom";
 import { handleRecommendationAction } from "./recommendationActions";
+import type { Goal } from "../../domain/types";
 
 // Accepts optional onFlowKpis callback to send current month KPIs to parent
 
@@ -20,8 +21,19 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const storeGoalsRaw = useAppStore((s) => s.goals);
   const storeGoals = Array.isArray(storeGoalsRaw) ? storeGoalsRaw : [];
 
-  // Always define flowKpis and related variables, even if model/projection is not loaded yet
-  let heroFree = 0, buckets = { bound: 0, planned: 0, invested: 0, free: 0 }, freeTimeline = [], shortfalls = [], goals = [], domainGoals = [];
+  // Explicitly type arrays and remove unused
+  type Shortfall = { month: string; amount: number };
+  const shortfalls: Shortfall[] = [];
+  type GoalSummary = {
+    goalId: string;
+    name: string;
+    priority: number;
+    etaMonth?: string;
+    reachable: boolean;
+  };
+  const goals: GoalSummary[] = [];
+  // DomainGoal type is imported from planning/types or domain/types
+  const domainGoals: Goal[] = [];
   const projection = model?.projection;
   const flowKpis = useMemo(() => {
     if (model && model.projection) {

@@ -162,7 +162,6 @@ export function mapAssetToInvestmentPlan(a: Asset): InvestmentPlan {
   return {
     id: a.id,
     name: a.name,
-    currentValue: a.currentValue,
     monthlyContribution: monthlyContributionCents,
     note: a.notes,
   };

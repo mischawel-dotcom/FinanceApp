@@ -39,7 +39,7 @@ export function selectPrioritizedGoalSummaries(
   const limit = options?.limit ?? 3;
 
   const domainById = new Map(domainGoals.map(g => [g.id, g] as const));
-  const merged: GoalSummary[] = proj.goals
+  const merged = proj.goals
     .map(pg => {
       const dg = domainById.get(pg.goalId);
       if (!dg) return undefined;
@@ -49,9 +49,9 @@ export function selectPrioritizedGoalSummaries(
         priority: dg.priority,
         reachable: pg.reachable,
         etaMonth: pg.etaMonth,
-      } satisfies GoalSummary;
+      };
     })
-    .filter((x): x is GoalSummary => Boolean(x));
+    .filter((x): x is NonNullable<typeof x> => x != null);
 
   // Sort order (dashboard friendly):
   // 1) priority ascending (1 is highest)

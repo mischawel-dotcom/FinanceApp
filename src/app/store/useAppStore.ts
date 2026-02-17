@@ -1,15 +1,11 @@
-
 import { create } from 'zustand';
-import type { Income } from '../../shared/types';
+import type { Income, Asset, FinancialGoal } from '@shared/types';
 import { persist } from 'zustand/middleware';
 import { assetRepository, goalRepository } from '../../data/repositories';
+import { normalizeAsset } from '../../data/repositories/normalizeAsset';
 import {
   seedIncomeCategories,
-  seedExpenseCategories,
-  seedIncomes,
-  seedExpenses,
-  seedAssets,
-  seedGoals
+  seedExpenseCategories
 } from '../../data/seedData';
 
 
@@ -35,9 +31,9 @@ function rehydrateDates(state: any) {
     expenses: Array.isArray(state.expenses)
       ? state.expenses.map((e: any) => fixDate(e, ['date', 'createdAt', 'updatedAt']))
       : [],
-    assets: Array.isArray(state.assets)
-      ? state.assets.map((a: any) => fixDate(a, ['purchaseDate', 'createdAt', 'updatedAt']))
-      : [],
+      assets: Array.isArray(state.assets)
+        ? state.assets.map((a: any) => normalizeAsset(fixDate(a, ['purchaseDate', 'createdAt', 'updatedAt'])))
+        : [],
     goals: Array.isArray(state.goals)
       ? state.goals.map((g: any) => fixDate(g, ['createdAt', 'updatedAt']))
       : [],
@@ -72,13 +68,12 @@ interface AppStore {
   createExpense: (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateExpense: (payload: any) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
-  createAsset: () => Promise<void>;
-  updateAsset: () => Promise<void>;
-  deleteAsset: () => Promise<void>;
-  createGoal: () => Promise<void>;
-  updateGoal: () => Promise<void>;
-
-  deleteGoal: () => Promise<void>;
+  createAsset: (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateAsset: (payload: Partial<Asset> & { id: string }) => Promise<void>;
+  deleteAsset: (id: string) => Promise<void>;
+  createGoal: (payload: Omit<FinancialGoal, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateGoal: (id: string, updatedFields: Partial<FinancialGoal>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   generateRecommendations: () => Promise<void>;
   deleteRecommendation: () => Promise<void>;
 }
@@ -270,14 +265,12 @@ export const useAppStore = create<AppStore>()(
         }
         try {
           const now = new Date();
-          const newAsset = {
+          const newAsset = normalizeAsset({
             ...payload,
-            monthlyContributionCents: typeof payload.monthlyContributionCents === 'number' && Number.isFinite(payload.monthlyContributionCents)
-              ? payload.monthlyContributionCents : 0,
             id: `asset${Date.now()}`,
             createdAt: now,
             updatedAt: now,
-          };
+          });
           set((state) => ({
             assets: [...state.assets, newAsset],
           }));
@@ -293,7 +286,7 @@ export const useAppStore = create<AppStore>()(
           throw err;
         }
       },
-      updateAsset: async (payload: any) => {
+      updateAsset: async (payload: Partial<Asset> & { id: string }) => {
         if (!payload?.id) return;
         try {
           if (assetRepository && typeof assetRepository.update === 'function') {
@@ -307,7 +300,7 @@ export const useAppStore = create<AppStore>()(
           console.error('updateAsset failed:', err);
         }
         set((state) => ({
-          assets: (state.assets ?? []).map((a: any) => a.id === payload.id ? { ...a, ...payload, updatedAt: new Date() } : a),
+          assets: (state.assets ?? []).map((a: any) => a.id === payload.id ? normalizeAsset({ ...a, ...payload, updatedAt: new Date() }) : a),
         }));
       },
       deleteAsset: async (id: string) => {
@@ -324,7 +317,7 @@ export const useAppStore = create<AppStore>()(
         }
         set((state) => ({ assets: (state.assets ?? []).filter((a: any) => a.id !== id) }));
       },
-      createGoal: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
+      createGoal: async (payload: Omit<FinancialGoal, 'id' | 'createdAt' | 'updatedAt'>) => {
         const now = new Date();
         const newGoal = {
           ...payload,
@@ -336,7 +329,7 @@ export const useAppStore = create<AppStore>()(
           goals: [...state.goals, newGoal],
         }));
       },
-      updateGoal: async (id: string, updatedFields: any) => {
+      updateGoal: async (id: string, updatedFields: Partial<FinancialGoal>) => {
         if (!id) return;
         try {
           // Update in repository/storage

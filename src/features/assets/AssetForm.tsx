@@ -2,7 +2,9 @@ import { useState, FormEvent } from 'react';
 import { format } from 'date-fns';
 import type { Asset, AssetType } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
-import { euroInputToCents, centsToEuroInput } from '@shared/utils/money';
+import { centsToEuroInput } from '@shared/utils/money';
+
+import { euroInputToCentsSafe } from '@shared/utils/money';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -65,16 +67,16 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
     const payload: any = {
       name: formData.name,
       type: formData.type,
-      costBasisCents: euroInputToCents(formData.costBasis),
+      costBasisCents: euroInputToCentsSafe(formData.costBasis),
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       notes: formData.notes || undefined,
-      monthlyContributionCents: euroInputToCents(formData.monthlyContribution) > 0 ? euroInputToCents(formData.monthlyContribution) : 0,
+      monthlyContributionCents: euroInputToCentsSafe(formData.monthlyContribution),
       ...(initialData?.id ? { id: initialData.id } : {}),
       ...(initialData?.createdAt ? { createdAt: initialData.createdAt } : {}),
       ...(initialData?.updatedAt ? { updatedAt: new Date() } : {}),
     };
     if (formData.marketValue) {
-      payload.marketValueCents = euroInputToCents(formData.marketValue);
+      payload.marketValueCents = euroInputToCentsSafe(formData.marketValue);
       payload.lastMarketValueUpdate = new Date().toISOString();
     }
     if (import.meta.env.DEV) {

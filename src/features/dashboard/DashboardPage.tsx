@@ -1,10 +1,10 @@
 import DashboardPlanningPreview from "@/features/dashboard/DashboardPlanningPreview";
-const SHOW_DEBUG = import.meta.env.DEV;
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
 import { format } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
 import { formatCentsEUR } from '@/ui/formatMoney';
+import { asCentsSafe } from '@shared/utils/money';
 
 const normalizeCents = (amountCents: unknown, amount: unknown) => {
   if (typeof amountCents === 'number' && Number.isFinite(amountCents)) return Math.round(amountCents);
@@ -50,14 +50,14 @@ export default function DashboardPage() {
 
   // Assets (robust: neue Architektur)
   const safeAssets = assets ?? [];
-  const totalCostBasisCents = safeAssets.reduce((sum, a) => sum + (a.costBasisCents ?? 0), 0);
-  const totalMarketValueCents = safeAssets.reduce((sum, a) => sum + (a.marketValueCents ?? 0), 0);
-  const hasAnyMarketValue = safeAssets.some(a => typeof a.marketValueCents === "number");
+  const totalCostBasisCents = safeAssets.reduce((sum, a) => sum + asCentsSafe(a.costBasisCents), 0);
+  const totalMarketValueCents = safeAssets.reduce((sum, a) => sum + asCentsSafe(a.marketValueCents), 0);
+  const hasAnyMarketValue = safeAssets.some(a => typeof a.marketValueCents === "number" && Number.isFinite(a.marketValueCents));
   const totalAssetValueCents = hasAnyMarketValue ? totalMarketValueCents : totalCostBasisCents;
   // Gewinn nur für Assets mit marketValueCents, sonst 0
   const assetGainCents = safeAssets.reduce((sum, a) => {
-    if (typeof a.marketValueCents !== "number") return sum;
-    return sum + (a.marketValueCents - (a.costBasisCents ?? 0));
+    if (typeof a.marketValueCents !== "number" || !Number.isFinite(a.marketValueCents)) return sum;
+    return sum + (asCentsSafe(a.marketValueCents) - asCentsSafe(a.costBasisCents));
   }, 0);
 
   // Goals (robust, wie im Block 'Wichtigste Ziele')

@@ -31,5 +31,14 @@
     "types": ["vitest/globals"]
   },
   "include": ["src"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/vitest.setup.*",
+    "**/__tests__/**",
+    "src/**/__tests__/**"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

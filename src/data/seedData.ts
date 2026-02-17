@@ -134,16 +134,14 @@ export const seedAssets: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
     name: 'Sparkonto',
     type: 'savings',
-    currentValue: 5000,
-    initialInvestment: 4000,
+    costBasisCents: Math.round(5000 * 100),
     purchaseDate: new Date(2025, 0, 1),
     notes: 'Notgroschen',
   },
   {
     name: 'ETF-Sparplan (MSCI World)',
     type: 'stocks',
-    currentValue: 2400,
-    initialInvestment: 2000,
+    costBasisCents: Math.round(2400 * 100),
     purchaseDate: new Date(2024, 6, 1),
     notes: 'Monatliche Sparrate: 100€',
   },

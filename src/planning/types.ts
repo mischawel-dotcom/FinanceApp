@@ -41,6 +41,7 @@ export interface PlanInput {
 }
 
 /** The four money buckets shown on the dashboard (per month). */
+export interface BucketBreakdown {
   bound: Cents;    // fixed costs + reserve contributions
   planned: Cents;  // goal contributions
   invested: Cents; // investment contributions
@@ -48,6 +49,7 @@ export interface PlanInput {
 }
 
 /** Projection for a single month on the timeline. */
+export interface MonthProjection {
   month: MonthKey;
   income: Cents;          // total monthly-normalized income
   buckets: BucketBreakdown;

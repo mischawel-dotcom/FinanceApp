@@ -1,8 +1,7 @@
 /// <reference types="vite/client" />
-import { StrictMode, useEffect } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import AppRouter from './app/AppRouter';
-import { useAppStore } from './app/store/useAppStore';
 import './index.css';
 
 
@@ -23,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(
-      (registration) => {
+      () => {
         // ...removed debug log...
       },
       (error) => {

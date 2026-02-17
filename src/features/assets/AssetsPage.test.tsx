@@ -54,23 +54,24 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AssetsPage from './AssetsPage';
 import { useAppStore } from '@/app/store/useAppStore';
+import { normalizeAsset } from '../../data/repositories/normalizeAsset';
 
 beforeEach(() => {
-	// Seed store with 2 assets
+	// Seed store with 2 assets (normalized)
 	useAppStore.setState({
 		assets: [
-			{
-						id: 'a1',
-						name: 'Test Asset 1',
-						type: 'savings',
-						currentValue: 1000,
-						initialInvestment: 800,
-						purchaseDate: new Date('2026-01-01'),
+			normalizeAsset({
+				id: 'a1',
+				name: 'Test Asset 1',
+				type: 'savings',
+				currentValue: 1000,
+				initialInvestment: 800,
+				purchaseDate: new Date('2026-01-01'),
 				notes: '',
 				createdAt: new Date('2026-01-01'),
 				updatedAt: new Date('2026-01-01'),
-			},
-			{
+			}),
+			normalizeAsset({
 				id: 'a2',
 				name: 'Test Asset 2',
 				type: 'stocks',
@@ -80,11 +81,10 @@ beforeEach(() => {
 				notes: '',
 				createdAt: new Date('2026-01-02'),
 				updatedAt: new Date('2026-01-02'),
-			},
+			}),
 		],
 	});
 });
-
 
 it('deletes asset and updates UI immediately', async () => {
 	const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true);

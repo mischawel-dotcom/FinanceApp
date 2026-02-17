@@ -147,8 +147,14 @@ export function buildPlanProjection(
 
     const current = goal.currentAmount ?? 0;
 
+    // Guard: skip if targetAmount is undefined/null
+    const target = goal.targetAmount;
+    if (target == null) {
+      return undefined;
+    }
+
     if (goal.monthlyContribution) {
-      const remaining = goal.targetAmount - current;
+      const remaining = target - current;
 
       if (remaining <= 0) {
         etaMonth = monthKeys[0];
@@ -165,10 +171,12 @@ export function buildPlanProjection(
     return { goalId: goal.id, etaMonth, reachable };
   });
 
+  // Filtert undefined/null, etaMonth bleibt optional
+  const goalsFiltered = goals.filter((g): g is NonNullable<typeof g> => g != null);
   return {
     settings,
     timeline,
-    goals,
+    goals: goalsFiltered,
     events
   };
 }

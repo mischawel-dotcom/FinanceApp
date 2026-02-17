@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { euroInputToCents, centsToEuroInput } from '@/shared/utils/money';
 import { format } from 'date-fns';
-import type { Expense, ExpenseCategory, ImportanceLevel } from '../../shared/types';
+import type { Expense, ExpenseCategory, ImportanceLevel, RecurrenceInterval } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
 
 interface ExpenseFormProps {
@@ -174,7 +174,7 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
           <Select
             label="Intervall"
             value={formData.recurrenceInterval}
-            onChange={e => setFormData({ ...formData, recurrenceInterval: e.target.value })}
+            onChange={e => setFormData({ ...formData, recurrenceInterval: e.target.value as RecurrenceInterval })}
             options={[
               { value: 'monthly', label: 'Monatlich' },
               { value: 'yearly', label: 'Jährlich' },

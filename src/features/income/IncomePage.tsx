@@ -53,7 +53,6 @@ export default function IncomePage() {
     incomes, 
     createIncomeCategory, 
     updateIncomeCategory, 
-    deleteIncomeCategory,
     createIncome,
     updateIncome,
     deleteIncome,
@@ -87,16 +86,6 @@ export default function IncomePage() {
     }
   };
 
-  const handleDeleteCategory = async () => {
-    if (confirm('Kategorie wirklich löschen?')) {
-      await deleteIncomeCategory();
-    }
-  };
-
-  const openEditCategoryModal = (category: IncomeCategory) => {
-    setEditingCategory(category);
-    setIsCategoryModalOpen(true);
-  };
 
   const openCreateCategoryModal = () => {
     setEditingCategory(null);

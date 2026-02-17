@@ -87,6 +87,8 @@ export interface Expense {
   categoryId: string;
   importance: ImportanceLevel;
   notes?: string;
+  isRecurring?: boolean;
+  recurrenceInterval?: RecurrenceInterval;
   createdAt: Date;
   updatedAt: Date;
 }

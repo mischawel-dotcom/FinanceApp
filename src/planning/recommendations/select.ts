@@ -4,6 +4,19 @@ import { scoreCandidate } from "./score";
 import type { PlanProjection } from "../types";
 import type { Goal } from "../../domain/types";
 
+type ActionKind = NonNullable<Recommendation["action"]>["kind"];
+type ActionIntent = NonNullable<Recommendation["action"]>["intent"];
+type ActionPayload = NonNullable<Recommendation["action"]>["payload"];
+
+function makeAction(
+  kind: ActionKind,
+  intent: ActionIntent,
+  label: string,
+  payload?: ActionPayload
+): Recommendation["action"] {
+  return payload ? { kind, intent, label, payload } : { kind, intent, label };
+}
+
 export function buildRecommendationCandidates(projection: PlanProjection, goals: Goal[], heroFreeCents: number): Recommendation[] {
   const candidates: Recommendation[] = [];
   const shortfall = ruleShortfallRisk(projection);
@@ -19,15 +32,11 @@ export function selectTopRecommendations(projection: PlanProjection, goals: Goal
     .map((rec) => {
       let action;
       if (rec.type === "shortfall_risk" || rec.type === "low_slack") {
-        action = { label: "Ansehen", intent: "planning" };
+        action = makeAction("open_planning", "planning", "Ansehen");
       } else if (rec.type === "goal_contrib_issue") {
         const goalId = rec.evidence?.goalId;
         action = goalId
-          ? {
-              kind: "navigate",
-              label: "Zum Ziel",
-              payload: { path: "/goals", query: { highlight: goalId } },
-            }
+          ? makeAction("open_goal", "goals", "Zum Ziel", { goalId })
           : undefined;
       }
       return { ...rec, action };

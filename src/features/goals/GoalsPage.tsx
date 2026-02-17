@@ -127,10 +127,12 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedGoals.map((goal) => {
 
-            // Backward compatibility: prefer cents fields, fallback to old euro fields
-            const targetCents = goal.targetAmountCents ?? Math.round((goal.targetAmount ?? 0) * 100);
-            const currentCents = goal.currentAmountCents ?? Math.round((goal.currentAmount ?? 0) * 100);
-            const progressRaw = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
+            // Use EUR fields only, convert to cents locally if needed
+            const targetEuro = goal.targetAmount ?? 0;
+            const currentEuro = goal.currentAmount ?? 0;
+            const targetCents = Math.round(targetEuro * 100);
+            const currentCents = Math.round(currentEuro * 100);
+            const progressRaw = targetEuro > 0 ? (currentEuro / targetEuro) * 100 : 0;
             const progress = Number.isFinite(progressRaw) ? Math.min(100, progressRaw) : 0;
             const remainingCents = targetCents - currentCents;
 

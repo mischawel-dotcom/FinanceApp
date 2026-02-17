@@ -36,8 +36,27 @@ export function centsToEuroInput(cents: number): string {
  * Asserts that n is integer cents (for dev/debug).
  */
 export function assertIntegerCents(n: number): number {
-  if (process.env.NODE_ENV !== 'production' && (!Number.isInteger(n) || n < 0)) {
+  if (import.meta.env.DEV && (!Number.isInteger(n) || n < 0)) {
     throw new Error(`Value is not valid integer cents: ${n}`);
   }
   return n;
+}
+
+// Helper in money.ts
+export function asCentsSafe(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * Robust Euro->Cents parsing for forms and normalization
+ */
+export function euroInputToCentsSafe(input: unknown): number {
+  if (typeof input === 'number' && Number.isFinite(input)) {
+    return Math.round(input * 100);
+  }
+  if (typeof input === 'string') {
+    const cents = euroInputToCents(input);
+    return Number.isFinite(cents) ? cents : 0;
+  }
+  return 0;
 }

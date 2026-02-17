@@ -2,7 +2,7 @@ import { euroInputToCents, centsToEuroInput } from '@/shared/utils/money';
 import { useState, FormEvent } from 'react';
 import { z, ZodIssue } from 'zod';
 import { format } from 'date-fns';
-import type { Income, IncomeCategory, RecurrenceInterval } from '../../shared/types';
+import type { Income, IncomeCategory, RecurrenceInterval } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
 
 interface IncomeFormProps {
