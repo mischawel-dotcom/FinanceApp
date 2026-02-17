@@ -1,8 +1,9 @@
 import DashboardPlanningPreview from "@/features/dashboard/DashboardPlanningPreview";
+const SHOW_DEBUG = import.meta.env.DEV;
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { useEffect } from 'react';
+import { format } from 'date-fns';
+import { useEffect, useState, useCallback } from 'react';
 import { formatCentsEUR } from '@/ui/formatMoney';
 
 const normalizeCents = (amountCents: unknown, amount: unknown) => {
@@ -12,6 +13,7 @@ const normalizeCents = (amountCents: unknown, amount: unknown) => {
 };
 
 export default function DashboardPage() {
+  const now = new Date();
   const { incomes, expenses, assets, goals, incomeCategories, expenseCategories, loadData } = useAppStore();
 
   useEffect(() => {
@@ -27,22 +29,24 @@ export default function DashboardPage() {
     }
   }, [incomes.length, expenses.length, assets.length, goals.length, incomeCategories.length, expenseCategories.length, loadData]);
 
-  // Calculate current month data
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
 
-  const currentMonthIncomes = incomes.filter(
-    (inc) => inc.date >= monthStart && inc.date <= monthEnd
-  );
-  const currentMonthExpenses = expenses.filter(
-    (exp) => exp.date >= monthStart && exp.date <= monthEnd
-  );
+  // --- Use planning projection for flow-only dashboard KPIs ---
+  // We'll use a React state to store the latest projection values from the child
+  type FlowKpis = {
+    incomeCents: number;
+    boundCents: number;
+    plannedCents: number;
+    investedCents: number;
+    freeCents: number;
+    expensesCents?: number;
+    savingRate?: number;
+  };
+  const [flowKpis, setFlowKpis] = useState<FlowKpis | null>(null);
 
-  const totalIncome = currentMonthIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-  const totalExpenses = currentMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const balance = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100).toFixed(1) : '0';
+  // Stable handler for DashboardPlanningPreview
+  const handleFlowKpis = useCallback((kpis: FlowKpis) => {
+    setFlowKpis(kpis);
+  }, []);
 
   // Assets
   // Convert euro values to integer cents for dashboard display
@@ -50,24 +54,28 @@ export default function DashboardPage() {
   const totalAssetInvestmentCents = Math.round(assets.reduce((sum, asset) => sum + asset.initialInvestment, 0) * 100);
   const assetGainCents = totalAssetValueCents - totalAssetInvestmentCents;
 
-  // Goals (cents-only, robust)
-  const totalGoalTarget = goals.reduce(
-    (sum, goal) => sum + (typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0),
-    0
-  );
-  const totalGoalCurrent = goals.reduce(
-    (sum, goal) => sum + (typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0),
-    0
-  );
-  let overallGoalProgress = 0;
-  if (totalGoalTarget > 0) {
-    const pct = (totalGoalCurrent / totalGoalTarget) * 100;
-    overallGoalProgress = Number.isFinite(pct) ? Math.min(100, pct) : 0;
-  }
+  // Goals (robust, wie im Block 'Wichtigste Ziele')
+  const safeGoals = goals ?? [];
+  const resolvedCurrentCents = (g: any) =>
+    typeof g.currentAmountCents === "number"
+      ? g.currentAmountCents
+      : typeof g.currentAmount === "number"
+        ? Math.round(g.currentAmount * 100)
+        : 0;
+  const resolvedTargetCents = (g: any) =>
+    typeof g.targetAmountCents === "number"
+      ? g.targetAmountCents
+      : typeof g.targetAmount === "number"
+        ? Math.round(g.targetAmount * 100)
+        : 0;
+  const totalGoalCurrentCents = safeGoals.reduce((sum, g) => sum + resolvedCurrentCents(g), 0);
+  const totalGoalTargetCents = safeGoals.reduce((sum, g) => sum + resolvedTargetCents(g), 0);
+  const totalGoalPercent = totalGoalTargetCents > 0 ? (totalGoalCurrentCents / totalGoalTargetCents) * 100 : 0;
 
-  // Expenses by category (current month)
+  // Expenses by category (fallback: use all expenses, or adapt to flowKpis if needed)
+  // If you want to use only current month, filter expenses by date here
   const expensesByCategory = expenseCategories.map((cat) => {
-    const categoryExpenses = currentMonthExpenses.filter((exp) => exp.categoryId === cat.id);
+    const categoryExpenses = expenses.filter((exp) => exp.categoryId === cat.id);
     const total = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
     return {
       category: cat.name,
@@ -76,6 +84,11 @@ export default function DashboardPage() {
       importance: cat.importance,
     };
   }).filter((cat) => cat.total > 0).sort((a, b) => b.total - a.total);
+
+  const totalExpenses = expensesByCategory.reduce(
+    (sum, cat) => sum + cat.total,
+    0
+  );
 
   // Recent transactions (last 5)
   const recentTransactions = [
@@ -96,8 +109,8 @@ export default function DashboardPage() {
   // Top 3 Goals by priority
   const priorityGoals = [...goals]
     .sort((a, b) => {
-      const priorityOrder: Record<import('@shared/types').GoalPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-      return priorityOrder[a.priority as import('@shared/types').GoalPriority] - priorityOrder[b.priority as import('@shared/types').GoalPriority];
+      const priorityOrder: Record<'critical' | 'high' | 'medium' | 'low', number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      return priorityOrder[a.priority as 'critical' | 'high' | 'medium' | 'low'] - priorityOrder[b.priority as 'critical' | 'high' | 'medium' | 'low'];
     })
     .slice(0, 3);
 
@@ -113,25 +126,38 @@ export default function DashboardPage() {
           {format(now, 'MMMM yyyy')} - Dein finanzieller Überblick
         </p>
       </div>
-      {/* Temporary: Planning Preview */}
-      <DashboardPlanningPreview />
 
-      {/* Main KPIs */}
+      {/* Planning Preview with KPI callback */}
+      <DashboardPlanningPreview onFlowKpis={handleFlowKpis} />
+
+      {/* Main KPIs (Flow-only, from planning projection) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <div className="text-sm text-gray-600 mb-1">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600">+{formatCentsEUR(totalIncome)}</div>
+          <div className="text-2xl font-bold text-success-600">
+            +{formatCentsEUR(flowKpis?.incomeCents ?? 0)}
+          </div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600">-{formatCentsEUR(totalExpenses)}</div>
+          <div className="text-2xl font-bold text-danger-600">
+            -{formatCentsEUR(
+              (flowKpis?.boundCents ?? 0) + (flowKpis?.plannedCents ?? 0) + (flowKpis?.investedCents ?? 0)
+            )}
+          </div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Saldo (Monat)</div>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {balance >= 0 ? '+' : ''}{formatCentsEUR(balance)}
+          <div className={`text-2xl font-bold ${(flowKpis?.freeCents ?? 0) >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+            {(flowKpis?.freeCents ?? 0) >= 0 ? '+' : ''}{formatCentsEUR(flowKpis?.freeCents ?? 0)}
           </div>
-          <div className="text-xs text-gray-500 mt-1">Sparquote: {savingsRate}%</div>
+          <div className="text-xs text-gray-500 mt-1">
+            Sparquote: {
+              flowKpis && flowKpis.incomeCents > 0
+                ? (((flowKpis.plannedCents + flowKpis.investedCents) / flowKpis.incomeCents) * 100).toFixed(1)
+                : '0'
+            }%
+          </div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600 mb-1">Vermögen</div>
@@ -212,10 +238,14 @@ export default function DashboardPage() {
         <Card title="Wichtigste Ziele">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {priorityGoals.map((goal) => {
-              const targetCents = typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0;
-              const currentCents = typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0;
-              const progressRaw = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
-              const progress = Number.isFinite(progressRaw) ? Math.min(100, progressRaw) : 0;
+              const targetCents = goal.targetAmountCents ?? 0;
+              const currentCents =
+                typeof (goal as any).currentAmountCents === "number"
+                  ? (goal as any).currentAmountCents
+                  : typeof (goal as any).currentAmount === "number"
+                    ? Math.round((goal as any).currentAmount * 100)
+                    : 0;
+              const percent = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
               return (
                 <div key={goal.id} className="p-4 bg-gray-50 rounded-lg">
                   <div className="font-semibold text-gray-900 mb-2">{goal.name}</div>
@@ -225,12 +255,12 @@ export default function DashboardPage() {
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-1">
                     <div
                       className={`h-full rounded-full ${
-                        progress >= 100 ? 'bg-success-600' : progress >= 75 ? 'bg-primary-600' : 'bg-primary-400'
+                        percent >= 100 ? 'bg-success-600' : percent >= 75 ? 'bg-primary-600' : 'bg-primary-400'
                       }`}
-                      style={{ width: `${Math.min(100, progress)}%` }}
+                      style={{ width: `${Math.min(100, percent)}%` }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">{progress.toFixed(1)}% erreicht</div>
+                  <div className="text-xs text-gray-500">{percent.toFixed(1)}% erreicht</div>
                 </div>
               );
             })}
@@ -239,24 +269,24 @@ export default function DashboardPage() {
       )}
 
       {/* Overall Goal Progress */}
-      {goals.length > 0 && (
+      {safeGoals.length > 0 && (
         <Card>
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Gesamt-Zielfortschritt</div>
               <div className="text-2xl font-bold text-gray-900 mt-1">
-                {formatCentsEUR(totalGoalCurrent)} / {formatCentsEUR(totalGoalTarget)}
+                {formatCentsEUR(totalGoalCurrentCents)} / {formatCentsEUR(totalGoalTargetCents)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary-600">{overallGoalProgress.toFixed(1)}%</div>
+              <div className="text-3xl font-bold text-primary-600">{totalGoalPercent.toFixed(1)}%</div>
               <div className="text-sm text-gray-500">erreicht</div>
             </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mt-4">
             <div
               className="h-full rounded-full bg-primary-600"
-              style={{ width: `${overallGoalProgress}%` }}
+              style={{ width: `${totalGoalPercent}%` }}
             />
           </div>
         </Card>

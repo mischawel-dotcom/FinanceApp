@@ -34,6 +34,10 @@ export interface PlanInput {
   goals: Goal[];
   investments: InvestmentPlan[];
   knownPayments?: KnownFuturePayment[];
+  /** Optional: Asset-Flow für monatliche Beiträge (Cents-only, Flow-only) */
+  assets?: Array<{
+    monthlyContributionCents: number;
+  }>;
 }
 
 /** The four money buckets shown on the dashboard (per month). */

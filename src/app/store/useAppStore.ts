@@ -272,6 +272,8 @@ export const useAppStore = create<AppStore>()(
           const now = new Date();
           const newAsset = {
             ...payload,
+            monthlyContributionCents: typeof payload.monthlyContributionCents === 'number' && Number.isFinite(payload.monthlyContributionCents)
+              ? payload.monthlyContributionCents : 0,
             id: `asset${Date.now()}`,
             createdAt: now,
             updatedAt: now,
@@ -295,7 +297,11 @@ export const useAppStore = create<AppStore>()(
         if (!payload?.id) return;
         try {
           if (assetRepository && typeof assetRepository.update === 'function') {
-            await assetRepository.update(payload.id, payload);
+            await assetRepository.update(payload.id, {
+              ...payload,
+              monthlyContributionCents: typeof payload.monthlyContributionCents === 'number' && Number.isFinite(payload.monthlyContributionCents)
+                ? payload.monthlyContributionCents : 0,
+            });
           }
         } catch (err) {
           console.error('updateAsset failed:', err);

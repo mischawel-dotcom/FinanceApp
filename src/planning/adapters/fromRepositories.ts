@@ -155,11 +155,15 @@ export function mapGoalToDomain(g: FinancialGoal): DomainGoal {
 }
 
 export function mapAssetToInvestmentPlan(a: Asset): InvestmentPlan {
+  // Map monthlyContributionCents (Cents-only, default 0)
+  const monthlyContributionCents = typeof a.monthlyContributionCents === 'number' && Number.isFinite(a.monthlyContributionCents)
+    ? Math.round(a.monthlyContributionCents)
+    : 0;
   return {
     id: a.id,
     name: a.name,
     currentValue: a.currentValue,
-    monthlyContribution: 0, // MVP: asset model has no monthly flow yet
+    monthlyContribution: monthlyContributionCents,
     note: a.notes,
   };
 }

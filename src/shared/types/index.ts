@@ -103,6 +103,7 @@ export interface Asset {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  monthlyContributionCents?: number; // optional, planning flow only
 }
 
 export type GoalPriority = 'low' | 'medium' | 'high' | 'critical';

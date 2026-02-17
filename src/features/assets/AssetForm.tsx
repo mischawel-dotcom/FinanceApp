@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { format } from 'date-fns';
 import type { Asset, AssetType } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
+import { euroInputToCents, centsToEuroInput } from '@shared/utils/money';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -26,6 +27,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
     initialInvestment: initialData?.initialInvestment !== undefined ? initialData.initialInvestment.toString() : '',
     purchaseDate: initialData?.purchaseDate ? format(initialData.purchaseDate, 'yyyy-MM-dd') : '',
     notes: initialData?.notes || '',
+    monthlyContribution: initialData?.monthlyContributionCents !== undefined ? centsToEuroInput(initialData.monthlyContributionCents) : '',
   });
 
   // Dev-only: track submit
@@ -68,10 +70,20 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
       initialInvestment: parseFloat(formData.initialInvestment),
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       notes: formData.notes || undefined,
+      monthlyContributionCents: euroInputToCents(formData.monthlyContribution),
       ...(initialData?.id ? { id: initialData.id } : {}),
       ...(initialData?.createdAt ? { createdAt: initialData.createdAt } : {}),
       ...(initialData?.updatedAt ? { updatedAt: new Date() } : {}),
     };
+          <Input
+            label="Monatlicher Sparbeitrag (€)"
+            type="number"
+            step="0.01"
+            value={formData.monthlyContribution}
+            onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
+            placeholder="0.00"
+            helperText="Optional. Monatlicher Sparplan für diese Anlage."
+          />
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("AssetForm calling createAsset/updateAsset with payload:", payload);
@@ -95,12 +107,23 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
         placeholder="z.B. Sparkonto, ETF-Sparplan"
       />
 
+
       <Select
         label="Art der Anlage"
         required
         value={formData.type}
         onChange={(e) => setFormData({ ...formData, type: e.target.value as AssetType })}
         options={assetTypeOptions}
+      />
+
+      <Input
+        label="Monatlicher Sparbeitrag (€)"
+        type="number"
+        step="0.01"
+        value={formData.monthlyContribution}
+        onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
+        placeholder="0.00"
+        helperText="Optional. Monatlicher Sparplan für diese Anlage."
       />
 
       <Input

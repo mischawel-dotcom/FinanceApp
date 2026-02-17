@@ -21,7 +21,7 @@ export function toCents(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return Math.round(value);
   return 0;
 }
-import { simulateGoalsByMonth } from '../domain/simulateGoals';
+
 /**
  * See FinApp4CP.md
  *
@@ -111,7 +111,15 @@ export function buildPlanProjection(
   });
 
   const reserveContrib = input.reserves.reduce((sum, r) => sum + r.monthlyContribution, 0);
+
   const investContrib = input.investments.reduce((sum, i) => sum + i.monthlyContribution, 0);
+  // Asset monthly contributions (Cents-only, Flow-only)
+  const assetInvestContribCents = (input.assets ?? []).reduce(
+    (sum: number, a: { monthlyContributionCents?: number }) => sum + (a.monthlyContributionCents ?? 0),
+    0
+  );
+  assertFiniteIntegerCents(assetInvestContribCents, 'assetInvestContribCents');
+  const investContribTotalCents = investContrib + assetInvestContribCents;
 
   // Goals simulation (stateful, capped)
 
@@ -174,7 +182,7 @@ export function buildPlanProjection(
         .reduce((sum, e) => sum + e.monthly, 0)
       + reserveContrib
       + (paymentsByMonth[month] || 0);
-    const invested = investContrib;
+    const invested = investContribTotalCents;
     const free = sumIncomeCents - bound - planned - invested;
         // DEBUG for month 2026-02
         if (import.meta.env?.MODE !== 'production' && month === '2026-02') {

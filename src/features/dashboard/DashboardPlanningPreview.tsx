@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useAppStore } from "@/app/store/useAppStore";
 const DEBUG = import.meta.env.DEV && import.meta.env.VITE_DEBUG === "1";
 
 import type { DashboardModel } from "@/planning/planFacade";
@@ -8,15 +9,60 @@ import { selectDashboardRecommendations } from "@/planning/recommendations";
 import { useNavigate } from "react-router-dom";
 import { handleRecommendationAction } from "./recommendationActions";
 
-export default function DashboardPlanningPreview() {
+// Accepts optional onFlowKpis callback to send current month KPIs to parent
+
+export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: (kpis: { incomeCents: number; boundCents: number; plannedCents: number; investedCents: number; freeCents: number }) => void }) {
   const navigate = useNavigate();
   const [model, setModel] = useState<DashboardModel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  // Store goals immer auf Top-Level holen (Hook order fix)
+  const storeGoalsRaw = useAppStore((s) => s.goals);
+  const storeGoals = Array.isArray(storeGoalsRaw) ? storeGoalsRaw : [];
+
+  // Always define flowKpis and related variables, even if model/projection is not loaded yet
+  let heroFree = 0, buckets = { bound: 0, planned: 0, invested: 0, free: 0 }, freeTimeline = [], shortfalls = [], goals = [], domainGoals = [];
+  const projection = model?.projection;
+  const flowKpis = useMemo(() => {
+    if (model && model.projection) {
+      const { projection } = model;
+      const currentMonth = projection.timeline[0];
+      if (currentMonth) {
+        const incomeCents = currentMonth.income;
+        const boundCents = currentMonth.buckets.bound;
+        const plannedCents = currentMonth.buckets.planned;
+        const investedCents = currentMonth.buckets.invested;
+        const freeCents = currentMonth.buckets.free;
+        return {
+          incomeCents,
+          boundCents,
+          plannedCents,
+          investedCents,
+          freeCents,
+          expensesCents: boundCents + plannedCents + investedCents,
+          savingRate: incomeCents > 0 ? (plannedCents + investedCents) / incomeCents : 0,
+        };
+      }
+    }
+    return {
+      incomeCents: 0,
+      boundCents: 0,
+      plannedCents: 0,
+      investedCents: 0,
+      freeCents: 0,
+      expensesCents: 0,
+      savingRate: 0,
+    };
+  }, [model]);
+
+  // useEffect always runs, but only calls callback if present
+  useEffect(() => {
+    if (!onFlowKpis) return;
+    onFlowKpis(flowKpis);
+  }, [onFlowKpis, flowKpis]);
 
   useEffect(() => {
     (async () => {
-      // --- Debug actual planning input ---
       try {
         if (DEBUG) {
           // ...removed debug log...
@@ -41,15 +87,17 @@ export default function DashboardPlanningPreview() {
   if (!model) return <div style={{ padding: 16 }}>Loading planning…</div>;
 
 
-
-  const { heroFree, buckets, freeTimeline, shortfalls, goals, projection, domainGoals } = model;
-
-  // Empfehlungen berechnen (max. 2, defensiv) – nutze domainGoals (Goal[])
-  const recs = selectDashboardRecommendations(projection, domainGoals, heroFree) || [];
+  // Robust guard für aktuellen Monat + Empfehlungen berechnen (max. 2, defensiv) – nutze domainGoals (Goal[])
+  const current = projection?.timeline?.[0];
+  const currentBuckets = current?.buckets ?? { bound: 0, planned: 0, invested: 0, free: 0 };
+  const heroFreeCents = currentBuckets.free ?? 0;
+  const dashboardRecommendations = projection
+    ? selectDashboardRecommendations(projection, domainGoals, heroFreeCents) || []
+    : [];
 
   // Find plannedCents und Breakdown für aktuellen Monat
-  const plannedCents = projection.timeline[0]?.buckets.planned ?? 0;
-  const plannedBreakdown = projection.timeline[0]?.plannedGoalBreakdownById ?? {};
+  const plannedCents = currentBuckets.planned;
+  const plannedBreakdown = current?.plannedGoalBreakdownById ?? {};
 
   // Helper for breakdown UI
   const plannedGoalsList = goals
@@ -69,11 +117,11 @@ export default function DashboardPlanningPreview() {
 
       {/* Empfehlungen-Block */}
       <div data-testid="dashboard-recommendations">
-        {recs.length > 0 && (
+        {dashboardRecommendations.length > 0 && (
           <>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>Empfehlungen</div>
             <div style={{ display: "grid", gap: 8 }}>
-              {recs.slice(0, 2).map((rec, i) => {
+              {dashboardRecommendations.slice(0, 2).map((rec, i) => {
                 let explanation = null;
                 if (rec.type === "shortfall_risk" && rec.evidence?.month && typeof rec.evidence.amountCents === "number") {
                   explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCentsEUR(rec.evidence.amountCents)}.`;
@@ -120,14 +168,14 @@ export default function DashboardPlanningPreview() {
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
         <div style={{ fontSize: 12, opacity: 0.7 }}>Verfügbar (aktueller Monat)</div>
-        <div style={{ fontSize: 28, fontWeight: 700 }}>{formatCentsEUR(heroFree)}</div>
+        <div style={{ fontSize: 28, fontWeight: 700 }}>{formatCentsEUR(currentBuckets.free)}</div>
 
       </div>
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>4 Töpfe (aktueller Monat)</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <div>Gebunden: <b>{formatCentsEUR(buckets.bound)}</b></div>
+          <div>Gebunden: <b>{formatCentsEUR(currentBuckets.bound)}</b></div>
           <div>
             Verplant: <b>{formatCentsEUR(plannedCents)}</b>
             <span style={{ marginLeft: 8 }}>
@@ -137,8 +185,8 @@ export default function DashboardPlanningPreview() {
               >Details</button>
             </span>
           </div>
-          <div>Investiert (Monat): <b>{formatCentsEUR(buckets.invested)}</b></div>
-          <div>Frei: <b>{formatCentsEUR(buckets.free)}</b></div>
+          <div>Investiert (Monat): <b>{formatCentsEUR(currentBuckets.invested)}</b></div>
+          <div>Frei: <b>{formatCentsEUR(currentBuckets.free)}</b></div>
         </div>
         <div style={{ fontSize: '0.9em', color: '#6b7280', marginTop: 8 }}>
           Hinweis: Vermögens-Bestand (Assets) ist separat und nicht Teil der 4 Cashflow-Töpfe. Bestand siehe Vermögen/Anlagen.
@@ -165,28 +213,53 @@ export default function DashboardPlanningPreview() {
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>Timeline (Free)</div>
         <div style={{ fontFamily: "monospace", fontSize: 12, maxHeight: 220, overflow: "auto" }}>
-          {freeTimeline.slice(0, 12).map((m) => (
-            <div key={m.month}>
-              {m.month}: {formatCentsEUR(m.free)}
-            </div>
-          ))}
+          {(() => {
+            const timeline = projection?.timeline ?? [];
+            if (timeline.length === 0) {
+              return <div style={{ opacity: 0.7 }}>Keine Timeline-Daten.</div>;
+            }
+            return timeline.slice(0, 12).map((item) => (
+              <div key={item.month}>
+                {item.month}: {formatCentsEUR(item.buckets?.free ?? 0)}
+              </div>
+            ));
+          })()}
         </div>
       </div>
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>Top Ziele (priorisiert)</div>
-        {goals.length === 0 ? (
-          <div style={{ opacity: 0.7 }}>Keine Ziele gefunden.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 6 }}>
-            {goals.map((g) => (
-              <div key={g.goalId}>
-                <b>{g.name}</b> (Prio {g.priority}) — {g.reachable ? "erreichbar" : "nicht erreichbar"}
-                {g.etaMonth ? `, ETA ${g.etaMonth}` : ""}
-              </div>
-            ))}
-          </div>
-        )}
+        {(() => {
+          if (storeGoals.length === 0) {
+            return <div style={{ opacity: 0.7 }}>Keine Ziele gefunden.</div>;
+          }
+          // Sortiere nach Priorität
+          const priorityOrder: Record<'critical' | 'high' | 'medium' | 'low', number> = { critical: 0, high: 1, medium: 2, low: 3 };
+          const sortedGoals = [...storeGoals].sort((a, b) => {
+            return priorityOrder[a.priority as 'critical' | 'high' | 'medium' | 'low'] - priorityOrder[b.priority as 'critical' | 'high' | 'medium' | 'low'];
+          });
+          return (
+            <div style={{ display: "grid", gap: 6 }}>
+              {sortedGoals.slice(0, 3).map((tg) => {
+                const goal = storeGoals.find(g => g.goalId === tg.goalId);
+                if (!goal) return null;
+                const currentCents = typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0;
+                const targetCents = typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0;
+                const monthlyCents = typeof goal.monthlyContributionCents === 'number' && Number.isFinite(goal.monthlyContributionCents) ? goal.monthlyContributionCents : 0;
+                const targetDate = goal.targetDate ? (typeof goal.targetDate === 'string' ? new Date(goal.targetDate) : goal.targetDate) : undefined;
+                const dateString = targetDate ? `${targetDate.getDate().toString().padStart(2, '0')}.${(targetDate.getMonth()+1).toString().padStart(2, '0')}.${targetDate.getFullYear()}` : '—';
+                return (
+                  <div key={goal.goalId || goal.id}>
+                    <b>{goal.name}</b> (Prio {goal.priority})<br />
+                    Fortschritt: {formatCentsEUR(currentCents)} / {formatCentsEUR(targetCents)}<br />
+                    Monatliche Sparrate: {formatCentsEUR(monthlyCents)}<br />
+                    Zieldatum: {dateString}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
