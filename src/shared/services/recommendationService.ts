@@ -6,6 +6,7 @@
 import type { 
   Expense, 
   ExpenseCategory, 
+  Income,
   Recommendation
 } from '@shared/types';
 import { subMonths } from 'date-fns';
@@ -26,19 +27,22 @@ export class RecommendationService {
    */
   generateRecommendations(
     expenses: Expense[],
-    categories: ExpenseCategory[]
+    categories: ExpenseCategory[],
+    incomes: Income[] = []
   ): Recommendation[] {
     const recommendations: Recommendation[] = [];
     const threeMonthsAgo = subMonths(new Date(), 3);
 
-    // Nur Ausgaben der letzten 3 Monate analysieren
     const recentExpenses = expenses.filter((exp) => exp.date >= threeMonthsAgo);
+    const recentIncomes = incomes.filter((inc) => inc.date >= threeMonthsAgo);
+
+    // Regel 5: Budget-Defizit (Ausgaben > Einnahmen) – prüft auch ohne Ausgaben
+    recommendations.push(...this.findBudgetDeficit(recentExpenses, recentIncomes));
 
     if (recentExpenses.length === 0) {
       return recommendations;
     }
 
-    // Gruppiere Ausgaben nach Kategorie
     const expensesByCategory = this.groupExpensesByCategory(recentExpenses, categories);
 
     // Regel 1: Niedrige Wichtigkeit (1-2) mit hohen Ausgaben
@@ -52,6 +56,9 @@ export class RecommendationService {
 
     // Regel 4: Viele kleine Ausgaben summieren sich
     recommendations.push(...this.findFrequentSmallExpenses(expensesByCategory));
+
+    // Regel 6: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten – Optimierungshinweis
+    recommendations.push(...this.findHighImportanceHighCost(expensesByCategory));
 
     return recommendations;
   }
@@ -233,6 +240,74 @@ export class RecommendationService {
         potentialSavings,
         impact: potentialSavings > 50000 ? 'medium' : 'low',
         explanation: `Berechnung: ${analysis.expenseCount} Ausgaben × ${formatCentsEUR(Math.round(analysis.averageAmount))} = ${formatCentsEUR(analysis.totalAmount)} (3 Monate). Bei bewussterem Konsum sind 50% Einsparung realistisch = ${formatCentsEUR(potentialSavings)}.`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
+
+    return recommendations;
+  }
+
+  /**
+   * Regel 5: Budget-Defizit – monatliche Ausgaben übersteigen Einnahmen
+   */
+  private findBudgetDeficit(
+    recentExpenses: Expense[],
+    recentIncomes: Income[]
+  ): Recommendation[] {
+    const recommendations: Recommendation[] = [];
+    const totalExpenseCents = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalIncomeCents = recentIncomes.reduce((sum, i) => sum + i.amount, 0);
+
+    if (totalExpenseCents <= totalIncomeCents || totalIncomeCents === 0) {
+      return recommendations;
+    }
+
+    const deficitCents = totalExpenseCents - totalIncomeCents;
+    const months = Math.max(1, new Set(recentExpenses.map((e) => {
+      const d = e.date instanceof Date ? e.date : new Date(e.date);
+      return `${d.getFullYear()}-${d.getMonth()}`;
+    })).size);
+    const monthlyDeficitCents = Math.round(deficitCents / months);
+
+    recommendations.push({
+      id: this.generateId(),
+      type: 'general',
+      title: 'Budget-Defizit: Ausgaben übersteigen Einnahmen',
+      description: `Deine Ausgaben (${formatCentsEUR(totalExpenseCents)}) liegen über deinen Einnahmen (${formatCentsEUR(totalIncomeCents)}). Monatliche Lücke: ca. ${formatCentsEUR(monthlyDeficitCents)}.`,
+      potentialSavings: deficitCents,
+      impact: monthlyDeficitCents > 50000 ? 'high' : monthlyDeficitCents > 20000 ? 'medium' : 'low',
+      explanation: `Berechnung: Gesamtausgaben ${formatCentsEUR(totalExpenseCents)} − Gesamteinnahmen ${formatCentsEUR(totalIncomeCents)} = ${formatCentsEUR(deficitCents)} Defizit über ${months} Monat(e). Prüfe, ob Ausgaben reduziert oder Einnahmen erhöht werden können.`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return recommendations;
+  }
+
+  /**
+   * Regel 6: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten (>1000€/Monat)
+   * → Auch wichtige Ausgaben können optimiert werden (10-15% Potenzial)
+   */
+  private findHighImportanceHighCost(analyses: ExpenseAnalysis[]): Recommendation[] {
+    const recommendations: Recommendation[] = [];
+
+    const highImportanceExpensive = analyses.filter(
+      (a) => a.importance >= 5 && a.totalAmount > 300000 // >1000€/Monat über 3 Monate (in Cents)
+    );
+
+    highImportanceExpensive.forEach((analysis) => {
+      const monthlyCostCents = Math.round(analysis.totalAmount / 3);
+      const potentialSavings = Math.round(analysis.totalAmount * 0.1);
+
+      recommendations.push({
+        id: this.generateId(),
+        type: 'reduce-expense',
+        title: `${analysis.categoryName}: Hohe Kosten trotz hoher Wichtigkeit`,
+        description: `"${analysis.categoryName}" ist dir wichtig (${analysis.importance}/6), kostet aber ${formatCentsEUR(monthlyCostCents)}/Monat. Auch bei wichtigen Ausgaben lohnt ein Vergleich.`,
+        potentialSavings,
+        impact: potentialSavings > 50000 ? 'medium' : 'low',
+        explanation: `Berechnung: Kosten ${formatCentsEUR(analysis.totalAmount)} (letzte 3 Monate) × 10% Optimierungspotenzial = ${formatCentsEUR(potentialSavings)}. Auch bei hoher Wichtigkeit (${analysis.importance}/6) gibt es oft günstigere Tarife, Anbieter oder Verhandlungsspielraum.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
