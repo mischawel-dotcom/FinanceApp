@@ -1,5 +1,6 @@
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button, Card } from '@shared/components';
+import { formatCentsEUR } from '@/ui/formatMoney';
 import { useState, useEffect } from 'react';
 
 import type { Recommendation } from '@shared/types';
@@ -101,7 +102,7 @@ export default function RecommendationsPage() {
             <div>
               <div className="text-sm text-gray-600">Gesamtes Einsparpotenzial</div>
               <div className="text-3xl font-bold text-success-600 mt-1">
-                {totalSavings.toFixed(2)} €
+                {formatCentsEUR(totalSavings)}
               </div>
               <div className="text-sm text-gray-500 mt-1">
                 {filteredRecommendations.length} Empfehlung{filteredRecommendations.length !== 1 ? 'en' : ''}
@@ -203,7 +204,7 @@ export default function RecommendationsPage() {
                   <div className="text-right flex-shrink-0">
                     <div className="text-sm text-gray-600">Einsparpotenzial</div>
                     <div className="text-2xl font-bold text-success-600">
-                      {rec.potentialSavings.toFixed(2)} €
+                      {formatCentsEUR(rec.potentialSavings)}
                     </div>
                   </div>
                 </div>
@@ -231,7 +232,7 @@ export default function RecommendationsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteRecommendation()}
+                    onClick={() => deleteRecommendation(rec.id)}
                   >
                     Erledigt / Ignorieren
                   </Button>

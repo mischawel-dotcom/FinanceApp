@@ -15,6 +15,7 @@ import {
   seedIncomeCategories,
   seedExpenseCategories
 } from '../../data/seedData';
+import { recommendationService } from '@shared/services/recommendationService';
 
 
 // Hilfsfunktion: Date-Felder rehydrieren
@@ -78,7 +79,7 @@ interface AppStore {
   updateGoal: (id: string, updatedFields: Partial<FinancialGoal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   generateRecommendations: () => Promise<void>;
-  deleteRecommendation: () => Promise<void>;
+  deleteRecommendation: (id: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -361,8 +362,17 @@ export const useAppStore = create<AppStore>()(
         }
         set((state) => ({ goals: (state.goals ?? []).filter((g: any) => g.id !== id) }));
       },
-      generateRecommendations: async () => {},
-      deleteRecommendation: async () => {},
+      generateRecommendations: async () => {
+        const { expenses, expenseCategories } = get();
+        const newRecs = recommendationService.generateRecommendations(expenses, expenseCategories);
+        set({ recommendations: newRecs });
+      },
+      deleteRecommendation: async (id: string) => {
+        if (!id) return;
+        set((state) => ({
+          recommendations: state.recommendations.filter((r) => r.id !== id),
+        }));
+      },
     }),
     {
       name: 'finance-app-store',
