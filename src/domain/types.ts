@@ -88,7 +88,11 @@ export interface KnownFuturePayment {
 }
 
 /**
- * Financial goal (car, vacation, etc.).
+ * Domain-layer goal (used by planning/forecast).
+ * Priority is numeric (1 = highest).
+ * Amounts use *Cents fields for planning; legacy Money fields exist for compatibility.
+ *
+ * Mapped from FinancialGoal (shared/types) via mapGoalToDomain in adapters/fromRepositories.
  */
 export type GoalPriority = 1 | 2 | 3 | 4 | 5;
 

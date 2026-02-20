@@ -1,9 +1,9 @@
-import { Recommendation } from "./types";
+import { PlanningPlanningRecommendation } from "./types";
 import type { PlanProjection } from "../types";
 import type { Goal } from "../../domain/types";
 
 // --- Rule: Shortfall Risk ---
-export function ruleShortfallRisk(projection: PlanProjection): Recommendation | null {
+export function ruleShortfallRisk(projection: PlanProjection): PlanningRecommendation | null {
   for (const mp of projection.timeline) {
     if (mp.buckets.free < 0) {
       return {
@@ -25,7 +25,7 @@ export function ruleShortfallRisk(projection: PlanProjection): Recommendation | 
 }
 
 // --- Rule: Low Slack ---
-export function ruleLowSlack(_projection: PlanProjection, heroFreeCents: number): Recommendation | null {
+export function ruleLowSlack(_projection: PlanProjection, heroFreeCents: number): PlanningRecommendation | null {
   if (heroFreeCents <= 0 || heroFreeCents < 1000) {
     return {
       id: `low_slack`,
@@ -43,8 +43,8 @@ export function ruleLowSlack(_projection: PlanProjection, heroFreeCents: number)
 }
 
 // --- Rule: Goal Contribution Issue ---
-export function ruleGoalContributionIssue(projection: PlanProjection, goals: Goal[]): Recommendation[] {
-  const recs: Recommendation[] = [];
+export function ruleGoalContributionIssue(projection: PlanProjection, goals: Goal[]): PlanningRecommendation[] {
+  const recs: PlanningRecommendation[] = [];
   const first = projection.timeline[0];
   if (!first) return recs;
   for (const goal of goals) {

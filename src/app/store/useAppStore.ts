@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import type { Income, Asset, FinancialGoal } from '@shared/types';
+import type {
+  Income,
+  IncomeCategory,
+  Expense,
+  ExpenseCategory,
+  Asset,
+  FinancialGoal,
+  Recommendation,
+} from '@shared/types';
 import { persist } from 'zustand/middleware';
 import { assetRepository, goalRepository } from '../../data/repositories';
 import { normalizeAsset } from '../../data/repositories/normalizeAsset';
@@ -7,9 +15,6 @@ import {
   seedIncomeCategories,
   seedExpenseCategories
 } from '../../data/seedData';
-
-
-// Typen für bessere Lesbarkeit (optional)
 
 
 // Hilfsfunktion: Date-Felder rehydrieren
@@ -41,32 +46,30 @@ function rehydrateDates(state: any) {
 }
 
 interface AppStore {
-  incomeCategories: any[];
-  expenseCategories: any[];
-  incomes: any[];
-  expenses: any[];
-  assets: any[];
-  goals: any[];
-  recommendations: any[];
+  incomeCategories: IncomeCategory[];
+  expenseCategories: ExpenseCategory[];
+  incomes: Income[];
+  expenses: Expense[];
+  assets: Asset[];
+  goals: FinancialGoal[];
+  recommendations: Recommendation[];
   isLoading: boolean;
   error: string | null;
 
-  // Actions (nur Stubs)
-  // Actions (nur Signaturen)
   ensureReferenceData: () => void;
   loadData: () => Promise<void>;
   initializeSeedData: () => Promise<void>;
   createIncomeCategory: () => Promise<void>;
   updateIncomeCategory: () => Promise<void>;
   deleteIncomeCategory: () => Promise<void>;
-  createIncome: (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateIncome: (payload: any) => Promise<void>;
+  createIncome: (payload: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateIncome: (payload: Partial<Income> & { id: string }) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
   createExpenseCategory: () => Promise<void>;
   updateExpenseCategory: () => Promise<void>;
   deleteExpenseCategory: () => Promise<void>;
-  createExpense: (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateExpense: (payload: any) => Promise<void>;
+  createExpense: (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateExpense: (payload: Partial<Expense> & { id: string }) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   createAsset: (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateAsset: (payload: Partial<Asset> & { id: string }) => Promise<void>;

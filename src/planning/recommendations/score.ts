@@ -1,6 +1,6 @@
-import { Recommendation } from "./types";
+import { PlanningRecommendation } from "./types";
 
-export function scoreCandidate(candidate: Recommendation): Recommendation {
+export function scoreCandidate(candidate: PlanningRecommendation): PlanningRecommendation {
   let impact = 0, urgency = 0, simplicity = 0, robustness = 0;
   switch (candidate.type) {
     case "shortfall_risk":

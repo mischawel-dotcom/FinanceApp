@@ -1,9 +1,15 @@
-// Robustly convert Euro or Cents to integer cents
-function euroOrCentsToCents(value: unknown): number {
+// --- Explicit conversion helpers (no heuristic, no guessing) ---
+
+/** Value is already stored as cents → ensure rounded integer. */
+function asIntegerCents(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
-  if (!Number.isInteger(value)) return Math.round(value * 100);
-  if (value >= 10000) return value;
-  return value * 100;
+  return Math.round(value);
+}
+
+/** Value is stored as Euro (float) → convert to integer cents. */
+function euroToCents(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.round(value * 100);
 }
 import type { PlanInput } from '../types';
 
@@ -36,9 +42,10 @@ function toIsoDate(d?: Date): IsoDate | undefined {
 function mapRecurrenceIntervalToInterval(i?: RecurrenceInterval): Interval {
   switch (i) {
     case 'monthly': return 'monthly';
+    case 'quarterly': return 'quarterly';
     case 'yearly': return 'yearly';
-    default:
-      return 'monthly';
+    // daily/weekly/biweekly have no domain Interval equivalent → approximate as monthly
+    default: return 'monthly';
   }
 }
 
@@ -55,12 +62,15 @@ function mapRepoGoalPriorityToDomain(p: RepoGoalPriority): DomainGoalPriority {
 }
 
 
-// Map recurring incomes as before
+// Income.amount: new data = cents (store writes amountCents mirror).
+// Legacy data without amountCents: amount is Euro.
 export function mapIncomeToDomain(i: Income): RecurringIncome | undefined {
   if (!('isRecurring' in i ? Boolean((i as any).isRecurring) : Boolean((i as any).recurrenceInterval))) return undefined;
   const interval = mapRecurrenceIntervalToInterval((i as any).recurrenceInterval);
   const confidence: Confidence = 'fixed';
-  const amountCents = euroOrCentsToCents((i as any).amount);
+  const amountCents = ('amountCents' in i && typeof (i as any).amountCents === 'number' && Number.isFinite((i as any).amountCents))
+    ? asIntegerCents((i as any).amountCents)
+    : euroToCents((i as any).amount);
   return {
     id: i.id,
     name: i.title,
@@ -72,9 +82,10 @@ export function mapIncomeToDomain(i: Income): RecurringIncome | undefined {
   };
 }
 
-// Map one-time incomes to RecurringIncome for the correct month only
 function mapOneTimeIncomeToDomain(i: Income): RecurringIncome {
-  const amountCents = euroOrCentsToCents((i as any).amount);
+  const amountCents = ('amountCents' in i && typeof (i as any).amountCents === 'number' && Number.isFinite((i as any).amountCents))
+    ? asIntegerCents((i as any).amountCents)
+    : euroToCents((i as any).amount);
   return {
     id: i.id,
     name: i.title,
@@ -116,17 +127,18 @@ export function mapExpenseToDomain(e: Expense): RecurringExpense | null {
   return null;
 }
 
+// Goal: *Cents fields are cents. Fallback fields (targetAmount, currentAmount,
+// monthlyContribution) are Euro from GoalForm → explicit euroToCents.
 export function mapGoalToDomain(g: FinancialGoal): DomainGoal {
-  // Robust guards for all *Cents fields
   const targetAmountCents = ('targetAmountCents' in g && typeof (g as any).targetAmountCents === 'number')
-    ? Math.round((g as any).targetAmountCents)
-    : euroOrCentsToCents((g as any).targetAmount);
+    ? asIntegerCents((g as any).targetAmountCents)
+    : euroToCents((g as any).targetAmount);
   const currentAmountCents = ('currentAmountCents' in g && typeof (g as any).currentAmountCents === 'number')
-    ? Math.round((g as any).currentAmountCents)
-    : euroOrCentsToCents((g as any).currentAmount);
+    ? asIntegerCents((g as any).currentAmountCents)
+    : euroToCents((g as any).currentAmount);
   const monthlyContributionCents = ('monthlyContributionCents' in g && typeof (g as any).monthlyContributionCents === 'number')
-    ? Math.round((g as any).monthlyContributionCents)
-    : euroOrCentsToCents((g as any).monthlyContribution);
+    ? asIntegerCents((g as any).monthlyContributionCents)
+    : euroToCents((g as any).monthlyContribution);
   const mappedGoal: DomainGoal = {
     id: g.id,
     name: g.name,
@@ -140,17 +152,6 @@ export function mapGoalToDomain(g: FinancialGoal): DomainGoal {
     currentAmountCents,
     targetDate: (g as any).targetDate ?? undefined,
   };
-  // DEBUG: Log mapped goal for planning input (Urlaub only, dev only)
-  if (import.meta.env?.MODE !== 'production' && (g.name ?? '').trim().toLowerCase() === 'urlaub') {
-    // eslint-disable-next-line no-console
-    console.log('[DEBUG:PlanningInputGoal]', {
-      name: mappedGoal.name,
-      targetAmountCents: mappedGoal.targetAmountCents,
-      currentAmountCents: mappedGoal.currentAmountCents,
-      monthlyContributionCents: mappedGoal.monthlyContributionCents,
-      targetDate: mappedGoal.targetDate,
-    });
-  }
   return mappedGoal;
 }
 
@@ -194,10 +195,9 @@ export function buildPlanInputFromRepoData(args: {
       // Robust recurring detection
       const isRecurring = ('isRecurring' in e) ? Boolean((e as any).isRecurring) : Boolean((e as any).recurrenceInterval);
       if (isRecurring) return [];
-      const rawAmount = ('amountCents' in e && typeof (e as any).amountCents === 'number')
-        ? (e as any).amountCents
-        : (e as any).amount;
-      const amountCents = euroOrCentsToCents(rawAmount);
+      const amountCents = ('amountCents' in e && typeof (e as any).amountCents === 'number' && Number.isFinite((e as any).amountCents))
+        ? asIntegerCents((e as any).amountCents)
+        : euroToCents((e as any).amount);
       const dueDate = toIsoDate((e as any).date);
       if (!dueDate) return [];
       return [{

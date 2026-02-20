@@ -26,6 +26,7 @@ it('goal monthlyContributionCents survives repo mapping and impacts planned buck
       id: 'inc1',
       title: 'Job',
       amount: 400000,
+      amountCents: 400000,
       date: new Date('2026-02-01T00:00:00.000Z'),
       categoryId: 'cat1',
       isRecurring: true,
@@ -39,7 +40,7 @@ it('goal monthlyContributionCents survives repo mapping and impacts planned buck
     {
       id: 'exp1',
       title: 'Miete',
-      amount: 1000,
+      amount: 100000,
       amountCents: 100000,
       date: new Date('2026-02-01T00:00:00.000Z'),
       categoryId: 'cat2',
@@ -57,7 +58,6 @@ it('goal monthlyContributionCents survives repo mapping and impacts planned buck
       name: 'Test Goal',
       targetAmountCents: 200000,
       monthlyContributionCents: 30000,
-      // other fields as needed
     },
   ];
   const repoAssets = [];
@@ -86,12 +86,13 @@ import { buildPlanInputFromRepoData, mapIncomeToDomain, mapGoalToDomain, mapExpe
 import { buildPlanProjection } from '../forecast';
 import type { Income, Expense, FinancialGoal } from '@shared/types';
 it('dashboard bound excludes past and far-future one-time expenses (regression)', () => {
-  // Setup deterministic repo data
+  // Setup deterministic repo data (amountCents mirrors amount, as real store does)
   const repoIncomes = [
     {
       id: 'inc1',
       title: 'Recurring Income',
       amount: 400000,
+      amountCents: 400000,
       date: new Date('2026-02-01T00:00:00.000Z'),
       categoryId: 'cat1',
       isRecurring: true,
@@ -107,6 +108,7 @@ it('dashboard bound excludes past and far-future one-time expenses (regression)'
       id: 'exp1',
       title: 'Miete',
       amount: 100000,
+      amountCents: 100000,
       date: new Date('2026-02-01T00:00:00.000Z'),
       categoryId: 'cat2',
       importance: 1,
@@ -119,6 +121,7 @@ it('dashboard bound excludes past and far-future one-time expenses (regression)'
       id: 'expPast',
       title: 'Past One-Time',
       amount: 1000000,
+      amountCents: 1000000,
       date: new Date('2026-01-21T00:00:00.000Z'),
       categoryId: 'cat2',
       importance: 1,
@@ -131,6 +134,7 @@ it('dashboard bound excludes past and far-future one-time expenses (regression)'
       id: 'expFuture',
       title: 'Future One-Time',
       amount: 300000,
+      amountCents: 300000,
       date: new Date('2026-05-05T00:00:00.000Z'),
       categoryId: 'cat2',
       importance: 1,

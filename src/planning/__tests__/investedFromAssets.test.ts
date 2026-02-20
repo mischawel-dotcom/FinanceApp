@@ -1,11 +1,12 @@
 import { buildPlanProjection } from '../forecast';
-// Minimal PlanningInput fixture for regression
+// Asset monthlyContributionCents flows into investments via mapAssetToInvestmentPlan.
+// Stock fields (currentValue, initialInvestment) must never affect invested/free.
 const baseInput = {
   incomes: [
     {
       id: 'income1',
       name: 'Job',
-      amount: 20000, // 200,00 €
+      amount: 20000, // 200,00 € in cents
       interval: 'monthly',
       startDate: '2026-02-01',
       endDate: undefined,
@@ -14,21 +15,16 @@ const baseInput = {
   expenses: [],
   goals: [],
   reserves: [],
-  investments: [],
-  assets: [
+  investments: [
     {
       id: 'a1',
       name: 'ETF',
-      monthlyContributionCents: 1000, // 10,00 €
-      currentValue: 0,
-      initialInvestment: 0,
+      monthlyContribution: 1000, // 10,00 € in cents
     },
     {
       id: 'a2',
       name: 'Aktie',
-      monthlyContributionCents: 2500, // 25,00 €
-      currentValue: 100000000, // 1.000.000,00 €
-      initialInvestment: 50000000, // 500.000,00 €
+      monthlyContribution: 2500, // 25,00 € in cents
     },
   ],
   knownPayments: [],
@@ -60,10 +56,9 @@ describe('investedFromAssets regression', () => {
     expect(Number.isInteger(investedCents)).toBe(true);
     expect(Number.isFinite(freeCents)).toBe(true);
     expect(Number.isInteger(freeCents)).toBe(true);
-    // 4) Stock-Trennung: Ändere nur currentValue/initialInvestment
-    input.assets[0].currentValue = 99999999;
-    input.assets[1].currentValue = 123456789;
-    input.assets[1].initialInvestment = 99999999;
+    // 4) Stock-Trennung: adding stock-only fields must not change invested/free
+    input.investments[0].currentValue = 99999999;
+    input.investments[1].currentValue = 123456789;
     const projection2 = buildPlanProjection(input, settings);
     const timeline2 = projection2.timeline;
     const feb2 = (timeline2 as TimelineMonth[]).find(m => m.month === '2026-02');

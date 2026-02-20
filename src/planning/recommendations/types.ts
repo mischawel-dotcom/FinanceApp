@@ -1,11 +1,15 @@
-export type RecommendationType =
+export type PlanningRecommendationType =
   | "shortfall_risk"
   | "low_slack"
   | "goal_contrib_issue";
 
-export interface Recommendation {
+/**
+ * Planning-layer recommendation (projection-based, deterministic).
+ * Not to be confused with ExpenseRecommendation in @shared/types.
+ */
+export interface PlanningRecommendation {
   id: string;
-  type: RecommendationType;
+  type: PlanningRecommendationType;
   title: string;
   reason: string;
   evidence?: {

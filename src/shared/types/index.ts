@@ -28,6 +28,10 @@ export type RecommendationType =
   | 'switch-category'
   | 'general';
 
+/**
+ * Expense-analysis recommendation (generated from spending patterns).
+ * Not to be confused with PlanningRecommendation in @/planning/recommendations/types.
+ */
 export interface Recommendation {
   id: string;
   title: string;
@@ -109,8 +113,20 @@ export interface Asset {
   monthlyContributionCents?: number; // optional, planning flow only
 }
 
+/**
+ * UI/persistence-layer goal priority (string-based).
+ * Mapped to domain GoalPriority (1–5) via mapRepoGoalPriorityToDomain
+ * in adapters/fromRepositories.
+ */
 export type GoalPriority = 'low' | 'medium' | 'high' | 'critical';
 
+/**
+ * UI/persistence-layer goal (stored in Zustand/localStorage).
+ * targetAmount and currentAmount are in Euro (float).
+ * monthlyContributionCents is in Cents (integer).
+ *
+ * Mapped to domain Goal via mapGoalToDomain in adapters/fromRepositories.
+ */
 export interface FinancialGoal {
   id: string;
   name: string;

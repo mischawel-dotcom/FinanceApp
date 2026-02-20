@@ -13,6 +13,22 @@ function parseDateField(val: any): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
+/**
+ * Legacy normalizer: older store versions wrote amount as cents but
+ * without the amountCents mirror field. Backfill it so the adapter
+ * can rely on the explicit "amountCents present → cents" contract.
+ */
+function ensureAmountCentsMirror(entry: any): any {
+  if (
+    typeof entry.amount === 'number' &&
+    Number.isFinite(entry.amount) &&
+    (entry.amountCents === undefined || entry.amountCents === null)
+  ) {
+    return { ...entry, amountCents: Math.round(entry.amount) };
+  }
+  return entry;
+}
+
 export function buildPlanInputFromPersistedStore(): PlanInput {
   try {
     const raw = localStorage.getItem('finance-app-store');
@@ -25,7 +41,7 @@ export function buildPlanInputFromPersistedStore(): PlanInput {
       return buildPlanInputFromRepoData({ incomes: [], expenses: [], assets: [], goals: [] });
     }
     const incomes = Array.isArray(state.incomes)
-      ? state.incomes.map((i: any) => ({
+      ? state.incomes.map((i: any) => ensureAmountCentsMirror({
           ...i,
           date: parseDateField(i.date),
           createdAt: parseDateField(i.createdAt),
@@ -33,7 +49,7 @@ export function buildPlanInputFromPersistedStore(): PlanInput {
         }))
       : [];
     const expenses = Array.isArray(state.expenses)
-      ? state.expenses.map((e: any) => ({
+      ? state.expenses.map((e: any) => ensureAmountCentsMirror({
           ...e,
           date: parseDateField(e.date),
           createdAt: parseDateField(e.createdAt),

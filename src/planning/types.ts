@@ -32,12 +32,8 @@ export interface PlanInput {
   expenses: RecurringExpense[];
   reserves: ReserveBucket[];
   goals: Goal[];
-  investments: InvestmentPlan[];
+  investments: InvestmentPlan[]; // includes asset monthlyContributionCents via mapAssetToInvestmentPlan
   knownPayments?: KnownFuturePayment[];
-  /** Optional: Asset-Flow für monatliche Beiträge (Cents-only, Flow-only) */
-  assets?: Array<{
-    monthlyContributionCents: number;
-  }>;
 }
 
 /** The four money buckets shown on the dashboard (per month). */
@@ -79,4 +75,10 @@ export interface PlanProjection {
   timeline: MonthProjection[];
   goals: GoalProjection[];
   events: PlanEvent[];
+}
+
+/** Stock-only: single data point in an asset's cost-basis timeline. */
+export interface AssetCostBasisPoint {
+  month: MonthKey;
+  costBasisCents: Cents;
 }
