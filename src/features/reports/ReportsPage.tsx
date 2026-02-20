@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card, Button, Table, Select } from '@shared/components';
+import { formatCentsEUR } from '@/ui/formatMoney';
 import {
   ResponsiveContainer,
   BarChart,
@@ -164,9 +165,9 @@ export default function ReportsPage() {
       ['Monat', 'Einnahmen', 'Ausgaben', 'Saldo'],
       ...monthlySeries.map((m) => [
         m.label,
-        m.income.toFixed(2),
-        m.expense.toFixed(2),
-        m.balance.toFixed(2),
+        (m.income / 100).toFixed(2),
+        (m.expense / 100).toFixed(2),
+        (m.balance / 100).toFixed(2),
       ]),
     ];
     exportCSV('finance-report-monate.csv', rows);
@@ -180,7 +181,7 @@ export default function ReportsPage() {
         t.type === 'income' ? 'Einnahme' : 'Ausgabe',
         t.title,
         t.category,
-        t.amount.toFixed(2),
+        (t.amount / 100).toFixed(2),
       ]),
     ];
     exportCSV(`transactions-${selectedMonth?.key}.csv`, rows);
@@ -222,16 +223,16 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <div className="text-sm text-gray-600">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600 mt-1">+{selectedMonthTotals.income.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-success-600 mt-1">+{formatCentsEUR(selectedMonthTotals.income)}</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600 mt-1">-{selectedMonthTotals.expense.toFixed(2)} €</div>
+          <div className="text-2xl font-bold text-danger-600 mt-1">-{formatCentsEUR(selectedMonthTotals.expense)}</div>
         </Card>
         <Card>
           <div className="text-sm text-gray-600">Saldo (Monat)</div>
           <div className={`text-2xl font-bold mt-1 ${selectedMonthTotals.balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {selectedMonthTotals.balance >= 0 ? '+' : ''}{selectedMonthTotals.balance.toFixed(2)} €
+            {selectedMonthTotals.balance >= 0 ? '+' : ''}{formatCentsEUR(selectedMonthTotals.balance)}
           </div>
         </Card>
       </div>
@@ -243,7 +244,7 @@ export default function ReportsPage() {
               <BarChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
                 <YAxis fontSize={12} />
-                <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
+                <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
                 <Legend />
                 <Bar dataKey="income" name="Einnahmen" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expense" name="Ausgaben" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -258,7 +259,7 @@ export default function ReportsPage() {
               <LineChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
                 <YAxis fontSize={12} />
-                <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
+                <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
                 <Line type="monotone" dataKey="balance" name="Saldo" stroke="#3b82f6" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
@@ -288,7 +289,7 @@ export default function ReportsPage() {
                       <Cell key={entry.id} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
+                  <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -317,7 +318,7 @@ export default function ReportsPage() {
               {
                 key: 'total',
                 label: 'Betrag',
-                render: (row) => `${row.total.toFixed(2)} €`,
+                render: (row) => formatCentsEUR(row.total),
               },
             ]}
           />
@@ -341,7 +342,7 @@ export default function ReportsPage() {
               label: 'Betrag',
               render: (row) => (
                 <span className={row.type === 'income' ? 'text-success-600' : 'text-danger-600'}>
-                  {row.type === 'income' ? '+' : '-'}{row.amount.toFixed(2)} €
+                  {row.type === 'income' ? '+' : '-'}{formatCentsEUR(row.amount)}
                 </span>
               ),
             },
