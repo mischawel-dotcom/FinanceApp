@@ -25,7 +25,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     targetAmount: initialTargetAmount,
-    currentAmount: initialData?.currentAmount?.toString() || '0',
+    currentAmount: initialData?.currentAmount?.toString() || '',
     targetDate: initialData?.targetDate ? format(initialData.targetDate, 'yyyy-MM-dd') : '',
     priority: initialData?.priority || 'medium' as GoalPriority,
     description: initialData?.description || '',
@@ -68,7 +68,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
       await onSubmit({
         name: formData.name,
         targetAmount,
-        currentAmount: parseFloat(formData.currentAmount),
+        currentAmount: parseFloat(formData.currentAmount) || 0,
         targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
         priority: formData.priority,
         description: formData.description || undefined,
@@ -113,7 +113,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           value={formData.targetAmount}
           onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
           error={errors.targetAmount}
-          placeholder="0.00"
+          placeholder=""
         />
         <Input
           label={`Aktuell (${getCurrencySymbol()})`}
@@ -123,7 +123,7 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           value={formData.currentAmount}
           onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
           error={errors.currentAmount}
-          placeholder="0.00"
+          placeholder=""
         />
         <Input
           label={`Monatl. Rate (${getCurrencySymbol()})`}

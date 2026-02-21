@@ -6,18 +6,29 @@ import { Button, Card, Modal, Table } from '@shared/components';
 import { formatCents } from '@/ui/formatMoney';
 import { ExpenseCategoryForm } from './ExpenseCategoryForm';
 import { ExpenseForm } from './ExpenseForm';
-// Patch: ExpenseForm now accepts onSubmit: (data: any) => void
+
+interface SavingSuggestion {
+  expenseId: string;
+  title: string;
+  amountCents: number;
+  dueDate: Date;
+  monthsUntilDue: number;
+  suggestedRateCents: number;
+}
 
 export default function ExpensesPage() {
   const { 
     expenseCategories, 
     expenses, 
+    goals,
     createExpenseCategory, 
     updateExpenseCategory, 
     deleteExpenseCategory,
     createExpense,
     updateExpense,
     deleteExpense,
+    createGoal,
+    linkExpenseToGoal,
     loadData
   } = useAppStore();
 
@@ -32,24 +43,25 @@ export default function ExpensesPage() {
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [activeTab, setActiveTab] = useState<'entries' | 'categories'>('entries');
+  const [savingSuggestion, setSavingSuggestion] = useState<SavingSuggestion | null>(null);
 
   // Category Handlers
-  const handleCreateCategory = async () => {
-    await createExpenseCategory();
+  const handleCreateCategory = async (data: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
+    await createExpenseCategory(data);
     setIsCategoryModalOpen(false);
   };
 
-  const handleUpdateCategory = async () => {
+  const handleUpdateCategory = async (data: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingCategory) {
-      await updateExpenseCategory();
+      await updateExpenseCategory({ ...data, id: editingCategory.id });
       setEditingCategory(null);
       setIsCategoryModalOpen(false);
     }
   };
 
-  const handleDeleteCategory = async () => {
+  const handleDeleteCategory = async (id: string) => {
     if (confirm('Kategorie wirklich löschen?')) {
-      await deleteExpenseCategory();
+      await deleteExpenseCategory(id);
     }
   };
 
@@ -65,9 +77,54 @@ export default function ExpensesPage() {
 
   // Expense Handlers
   const handleCreateExpense = async (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await createExpense(payload);
+    const expenseId = await createExpense(payload);
     setIsExpenseModalOpen(false);
     setEditingExpense(null);
+
+    // Only suggest savings goal for one-time (non-recurring), high-amount, future expenses.
+    // Recurring expenses are already handled by the forecast via monthly normalization.
+    if (payload.isRecurring) return;
+    if (payload.amount < 20000) return;
+
+    const expenseDate = payload.date instanceof Date ? payload.date : new Date(payload.date);
+    const now = new Date();
+    const monthsDiff =
+      (expenseDate.getFullYear() - now.getFullYear()) * 12 +
+      (expenseDate.getMonth() - now.getMonth());
+    if (monthsDiff < 2) return;
+
+    const id = expenseId || useAppStore.getState().expenses.slice(-1)[0]?.id;
+    if (!id) return;
+
+    setSavingSuggestion({
+      expenseId: id,
+      title: (payload as any).title ?? 'Ausgabe',
+      amountCents: payload.amount,
+      dueDate: expenseDate,
+      monthsUntilDue: monthsDiff,
+      suggestedRateCents: Math.ceil(payload.amount / monthsDiff),
+    });
+  };
+
+  const handleAcceptSuggestion = async () => {
+    if (!savingSuggestion) return;
+    const { expenseId, title, amountCents, dueDate, suggestedRateCents } = savingSuggestion;
+    await createGoal({
+      name: `Sparen: ${title}`,
+      targetAmount: amountCents / 100,
+      currentAmount: 0,
+      targetDate: dueDate,
+      priority: 'high',
+      monthlyContributionCents: suggestedRateCents,
+      linkedExpenseId: expenseId,
+    });
+    const createdGoal = useAppStore.getState().goals.find(
+      (g) => (g as any).linkedExpenseId === expenseId
+    );
+    if (createdGoal) {
+      linkExpenseToGoal(expenseId, createdGoal.id);
+    }
+    setSavingSuggestion(null);
   };
 
   const handleUpdateExpense = async (payload: Expense) => {
@@ -77,7 +134,16 @@ export default function ExpensesPage() {
   };
 
   const handleDeleteExpense = async (id: string) => {
-    if (!confirm('Ausgabe wirklich löschen?')) return;
+    const expense = expenses.find((e) => e.id === id);
+    const linkedGoal = (expense as any)?.linkedGoalId
+      ? goals.find((g) => g.id === (expense as any).linkedGoalId)
+      : null;
+
+    const message = linkedGoal
+      ? `Diese Ausgabe hat ein verknüpftes Sparziel „${linkedGoal.name}". Beides wird gelöscht.\n\nTrotzdem löschen?`
+      : 'Ausgabe wirklich löschen?';
+
+    if (!confirm(message)) return;
     await deleteExpense(id);
   };
 
@@ -139,7 +205,7 @@ export default function ExpensesPage() {
           <Button size="sm" variant="secondary" onClick={() => openEditCategoryModal(cat)}>
             Bearbeiten
           </Button>
-          <Button size="sm" variant="danger" onClick={handleDeleteCategory}>
+          <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>
             Löschen
           </Button>
         </div>
@@ -149,7 +215,21 @@ export default function ExpensesPage() {
 
   const expenseColumns = [
     { key: 'date', label: 'Datum', render: (exp: Expense) => format(exp.date, 'dd.MM.yyyy') },
-    { key: 'title', label: 'Titel' },
+    {
+      key: 'title',
+      label: 'Titel',
+      render: (exp: Expense) => (
+        <span className="flex items-center gap-1.5">
+          {exp.title}
+          {(exp as any).linkedGoalId && (
+            <span title={`Verknüpft mit Ziel: ${goals.find((g) => g.id === (exp as any).linkedGoalId)?.name ?? ''}`}
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+              Sparziel
+            </span>
+          )}
+        </span>
+      ),
+    },
     {
       key: 'amount',
       label: 'Betrag',
@@ -276,6 +356,9 @@ export default function ExpensesPage() {
                           {exp.isRecurring && (
                             <span className="px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-[10px] font-medium">Wdh.</span>
                           )}
+                          {(exp as any).linkedGoalId && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-[10px] font-medium">Sparziel</span>
+                          )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
@@ -336,7 +419,7 @@ export default function ExpensesPage() {
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <button onClick={() => openEditCategoryModal(cat)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
-                      <button onClick={handleDeleteCategory} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                      <button onClick={() => handleDeleteCategory(cat.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
                     </div>
                   </div>
                 ))}
@@ -383,6 +466,44 @@ export default function ExpensesPage() {
             setEditingCategory(null);
           }}
         />
+      </Modal>
+
+      {/* Savings Goal Suggestion Dialog */}
+      <Modal
+        isOpen={!!savingSuggestion}
+        onClose={() => setSavingSuggestion(null)}
+        title="Für diese Ausgabe ansparen?"
+        size="sm"
+      >
+        {savingSuggestion && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              <strong>„{savingSuggestion.title}"</strong> kostet{' '}
+              <strong>{formatCents(savingSuggestion.amountCents)}</strong> und ist am{' '}
+              <strong>{format(savingSuggestion.dueDate, 'dd.MM.yyyy')}</strong> fällig.
+            </p>
+            <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
+              <p className="text-sm text-primary-800 dark:text-primary-200">
+                Mit einer monatlichen Sparrate von{' '}
+                <strong>{formatCents(savingSuggestion.suggestedRateCents)}</strong>{' '}
+                kannst du den Betrag in{' '}
+                <strong>{savingSuggestion.monthsUntilDue} Monaten</strong> zusammensparen.
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Es wird ein Sparziel erstellt, das mit dieser Ausgabe verknüpft ist.
+              Wird die Ausgabe gelöscht, wird auch das Sparziel entfernt.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" onClick={() => setSavingSuggestion(null)}>
+                Nein danke
+              </Button>
+              <Button variant="primary" onClick={handleAcceptSuggestion}>
+                Sparziel erstellen
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

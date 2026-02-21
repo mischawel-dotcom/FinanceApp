@@ -114,7 +114,7 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
           value={formData.amount}
           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           error={errors.amount}
-          placeholder="0.00"
+          placeholder=""
         />
         <Input
           label="Datum"

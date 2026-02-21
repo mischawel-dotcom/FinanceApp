@@ -189,12 +189,15 @@ export function buildPlanInputFromRepoData(args: {
   // Recurring expenses only
   const expenses = args.expenses.map(mapExpenseToDomain).filter((x): x is RecurringExpense => Boolean(x));
 
-  // One-time (non-recurring) expenses as KnownFuturePayment
+  // One-time (non-recurring) expenses as KnownFuturePayment.
+  // Expenses with a linked savings goal are excluded: the goal's monthly
+  // contributions already represent the cashflow impact. Including the
+  // expense as a lump-sum payment would double-count.
   const knownPayments = args.expenses
     .flatMap(e => {
-      // Robust recurring detection
       const isRecurring = ('isRecurring' in e) ? Boolean((e as any).isRecurring) : Boolean((e as any).recurrenceInterval);
       if (isRecurring) return [];
+      if ((e as any).linkedGoalId) return [];
       const amountCents = ('amountCents' in e && typeof (e as any).amountCents === 'number' && Number.isFinite((e as any).amountCents))
         ? asIntegerCents((e as any).amountCents)
         : euroToCents((e as any).amount);

@@ -93,6 +93,7 @@ export interface Expense {
   notes?: string;
   isRecurring?: boolean;
   recurrenceInterval?: RecurrenceInterval;
+  linkedGoalId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -136,6 +137,7 @@ export interface FinancialGoal {
   priority: GoalPriority;
   description?: string;
   monthlyContributionCents?: number;
+  linkedExpenseId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

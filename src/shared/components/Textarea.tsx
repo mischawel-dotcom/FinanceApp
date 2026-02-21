@@ -26,6 +26,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={textareaId}
+          autoComplete="off"
           aria-invalid={!!error}
           aria-describedby={describedBy}
           className={[

@@ -37,6 +37,7 @@ export default function GoalsPage() {
   // Store (cast to any to avoid signature/type drift blocking compile)
   const store = useAppStore() as any;
   const goals: FinancialGoal[] = store.goals ?? [];
+  const expenses = store.expenses ?? [];
   const loadData: () => void = store.loadData ?? (() => {});
   const createGoal: (data: any) => Promise<void> = store.createGoal ?? (async () => {});
   const updateGoal: (id: string, data: any) => Promise<void> = store.updateGoal ?? (async () => {});
@@ -101,7 +102,16 @@ export default function GoalsPage() {
   };
 
   const handleDelete = async (goalId: string) => {
-    if (confirm("Ziel wirklich löschen?")) {
+    const goal = goals.find((g) => g.id === goalId);
+    const linkedExpense = (goal as any)?.linkedExpenseId
+      ? expenses.find((e: any) => e.id === (goal as any).linkedExpenseId)
+      : null;
+
+    const message = linkedExpense
+      ? `Dieses Ziel deckt die Ausgabe „${linkedExpense.title}" ab. Wenn du es löschst, wird die Ausgabe nicht mehr angespart und erscheint als volle Belastung im Fälligkeitsmonat.\n\nTrotzdem löschen?`
+      : "Ziel wirklich löschen?";
+
+    if (confirm(message)) {
       await deleteGoal(goalId);
     }
   };
@@ -152,6 +162,15 @@ export default function GoalsPage() {
                       <div>
                         <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{goal.name}</h3>
                         {goal.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{goal.description}</p>}
+                        {(goal as any).linkedExpenseId && (() => {
+                          const linked = expenses.find((e: any) => e.id === (goal as any).linkedExpenseId);
+                          return (
+                            <p className="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-1">
+                              <span>🔗</span>
+                              Verknüpft mit Ausgabe{linked ? `: ${linked.title}` : ''}
+                            </p>
+                          );
+                        })()}
                         {isHighlighted && (
                           <span className="goal-row__badge" aria-label="Empfehlung">Empfehlung</span>
                         )}

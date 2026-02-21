@@ -99,7 +99,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
           value={formData.costBasis}
           onChange={(e) => setFormData({ ...formData, costBasis: e.target.value })}
           error={errors.costBasis}
-          placeholder="0.00"
+          placeholder=""
         />
         <Input
           label={`Monatl. Sparrate (${getCurrencySymbol()})`}
@@ -108,7 +108,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
           value={formData.monthlyContribution}
           onChange={(e) => setFormData({ ...formData, monthlyContribution: e.target.value })}
           error={errors.monthlyContribution}
-          placeholder="0.00"
+          placeholder=""
         />
       </div>
 

@@ -66,12 +66,13 @@ interface AppStore {
   createIncome: (payload: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateIncome: (payload: Partial<Income> & { id: string }) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
-  createExpenseCategory: () => Promise<void>;
-  updateExpenseCategory: () => Promise<void>;
-  deleteExpenseCategory: () => Promise<void>;
-  createExpense: (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  createExpenseCategory: (payload: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateExpenseCategory: (payload: Partial<ExpenseCategory> & { id: string }) => Promise<void>;
+  deleteExpenseCategory: (id: string) => Promise<void>;
+  createExpense: (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateExpense: (payload: Partial<Expense> & { id: string }) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  linkExpenseToGoal: (expenseId: string, goalId: string) => void;
   createAsset: (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateAsset: (payload: Partial<Asset> & { id: string }) => Promise<void>;
   deleteAsset: (id: string) => Promise<void>;
@@ -211,19 +212,39 @@ export const useAppStore = create<AppStore>()(
       deleteIncome: async (id: string) => {
         set((state) => ({ incomes: state.incomes.filter((i) => i.id !== id) }));
       },
-      createExpenseCategory: async () => {},
-      updateExpenseCategory: async () => {},
-      deleteExpenseCategory: async () => {},
+      createExpenseCategory: async (payload) => {
+        const now = new Date();
+        const id = `expcat${Date.now()}`;
+        const newCat = { ...payload, id, createdAt: now, updatedAt: now };
+        set((state) => ({
+          expenseCategories: [...state.expenseCategories, newCat as any],
+        }));
+      },
+      updateExpenseCategory: async (payload) => {
+        if (!payload?.id) return;
+        set((state) => ({
+          expenseCategories: state.expenseCategories.map((c: any) =>
+            c.id === payload.id ? { ...c, ...payload, updatedAt: new Date() } : c
+          ),
+        }));
+      },
+      deleteExpenseCategory: async (id) => {
+        if (!id) return;
+        set((state) => ({
+          expenseCategories: state.expenseCategories.filter((c: any) => c.id !== id),
+        }));
+      },
       createExpense: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
         const now = new Date();
         const date = payload.date instanceof Date ? payload.date : new Date(payload.date);
         const amount = Number.isFinite(payload.amount) ? Math.round(payload.amount) : 0;
+        const id = `exp${Date.now()}`;
         const newExpense = {
           ...payload,
-          id: `exp${Date.now()}`,
+          id,
           date,
           amount,
-          amountCents: amount, // legacy mirror
+          amountCents: amount,
           isRecurring: !!payload.isRecurring,
           recurrenceInterval: payload.isRecurring ? payload.recurrenceInterval : undefined,
           createdAt: now,
@@ -232,6 +253,7 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({
           expenses: [...state.expenses, newExpense as any],
         }));
+        return id;
       },
       updateExpense: async (payload: any) => {
         if (!payload?.id) return;
@@ -260,7 +282,21 @@ export const useAppStore = create<AppStore>()(
         }));
       },
       deleteExpense: async (id: string) => {
-        set((state) => ({ expenses: state.expenses.filter((e: any) => e.id !== id) }));
+        const expense = get().expenses.find((e: any) => e.id === id);
+        const linkedGoalId = (expense as any)?.linkedGoalId;
+        set((state) => ({
+          expenses: state.expenses.filter((e: any) => e.id !== id),
+          goals: linkedGoalId
+            ? state.goals.filter((g: any) => g.id !== linkedGoalId)
+            : state.goals,
+        }));
+      },
+      linkExpenseToGoal: (expenseId: string, goalId: string) => {
+        set((state) => ({
+          expenses: state.expenses.map((e: any) =>
+            e.id === expenseId ? { ...e, linkedGoalId: goalId, updatedAt: new Date() } : e
+          ),
+        }));
       },
       createAsset: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (import.meta.env.DEV) {
@@ -350,17 +386,24 @@ export const useAppStore = create<AppStore>()(
       },
       deleteGoal: async (id: string) => {
         if (!id) return;
+        const goal = (get().goals ?? []).find((g: any) => g.id === id);
+        if (!goal) return;
         try {
-          const goals = get().goals ?? [];
-          const goal = goals.find((g: any) => g.id === id);
-          if (!goal) return;
           if (goalRepository && typeof goalRepository.delete === 'function') {
             await goalRepository.delete(id);
           }
         } catch (err) {
           console.error('deleteGoal failed:', err);
         }
-        set((state) => ({ goals: (state.goals ?? []).filter((g: any) => g.id !== id) }));
+        const linkedExpenseId = (goal as any).linkedExpenseId;
+        set((state) => ({
+          goals: (state.goals ?? []).filter((g: any) => g.id !== id),
+          expenses: linkedExpenseId
+            ? state.expenses.map((e: any) =>
+                e.id === linkedExpenseId ? { ...e, linkedGoalId: undefined, updatedAt: new Date() } : e
+              )
+            : state.expenses,
+        }));
       },
       generateRecommendations: async () => {
         const { expenses, expenseCategories } = get();

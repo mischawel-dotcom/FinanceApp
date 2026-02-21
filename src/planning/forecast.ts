@@ -29,7 +29,7 @@ export function toCents(value: unknown): number {
  * Implement the planning forecast:
  * - export function buildPlanProjection(input: PlanInput, settings: PlanSettings): PlanProjection
  * - Month is the primary time unit (MonthKey "YYYY-MM")
- * - Normalize recurring values to monthly based on Interval
+ * - Lump-sum display for non-monthly recurring income AND expenses
  * - Produce BucketBreakdown (bound/planned/invested/free) per month
  * - Create events:
  *   - payment_due for KnownFuturePayment in that month
@@ -72,18 +72,6 @@ function getMonthKeys(startMonth: MonthKey, count: number): MonthKey[] {
 
   return keys;
 }
-// Helper: normalize amount to monthly based on Interval type (always integer cents)
-// Used for EXPENSES (budget reservation spread across months).
-function normalize(amount: number, interval: Interval): number {
-  switch (interval) {
-    case 'monthly': return amount;
-    case 'quarterly': return Math.round(amount / 3);
-    case 'semi_yearly': return Math.round(amount / 6);
-    case 'yearly': return Math.round(amount / 12);
-    default: return 0;
-  }
-}
-
 // Helper: check if a specific month is an occurrence month for a non-monthly interval.
 // E.g. yearly income in November → occurs in 2026-11, 2027-11, ...
 function intervalMonths(interval: Interval): number {
@@ -124,10 +112,7 @@ export function buildPlanProjection(
 
   const expenses = input.expenses.map(e => {
     assertFiniteIntegerCents(e.amount, `expense[${e.id}].amount`);
-    return {
-      ...e,
-      monthly: normalize(e.amount, e.interval)
-    };
+    return { ...e };
   });
 
   const reserveContrib = input.reserves.reduce((sum, r) => sum + r.monthlyContribution, 0);
@@ -188,14 +173,18 @@ export function buildPlanProjection(
       .filter(i => i.startDate && i.endDate && i.startDate === i.endDate && month === i.startDate.slice(0, 7))
       .reduce((sum, i) => sum + (typeof i.amountCents === 'number' ? i.amountCents : i.amount), 0);
     const sumIncomeCents = recurringIncomeCents + oneTimeIncomeCents;
+    // Recurring expenses: lump-sum in occurrence months (analogous to income).
+    // Monthly expenses contribute every month; yearly/quarterly only in their specific months.
     const bound =
       expenses
         .filter(e => {
           const startM = e.startDate ? e.startDate.slice(0, 7) : undefined;
           const endM = e.endDate ? e.endDate.slice(0, 7) : undefined;
-          return (!startM || month >= startM) && (!endM || month <= endM);
+          if (startM && month < startM) return false;
+          if (endM && month > endM) return false;
+          return isOccurrenceMonth(month, e.startDate, e.interval);
         })
-        .reduce((sum, e) => sum + e.monthly, 0)
+        .reduce((sum, e) => sum + e.amount, 0)
       + reserveContrib
       + (paymentsByMonth[month] || 0);
     const invested = investContribTotalCents;
