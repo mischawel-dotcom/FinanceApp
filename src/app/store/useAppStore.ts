@@ -376,6 +376,40 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'finance-app-store',
+      version: 2,
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          // Pre-v2 data stored income/expense amounts as Euro (float).
+          // v2+ stores them as integer Cents. Entries created after the
+          // Cents-Contract already have an explicit amountCents field;
+          // entries from the original MVP do not.
+          const migrateEntries = (entries: any[]) =>
+            entries.map((e: any) => {
+              if (
+                typeof e.amountCents === 'number' &&
+                Number.isFinite(e.amountCents) &&
+                Number.isInteger(e.amountCents) &&
+                e.amountCents >= 100
+              ) {
+                return e; // already cents
+              }
+              const eurAmount =
+                typeof e.amount === 'number' && Number.isFinite(e.amount)
+                  ? e.amount
+                  : 0;
+              const cents = Math.round(eurAmount * 100);
+              return { ...e, amount: cents, amountCents: cents };
+            });
+
+          if (Array.isArray(persisted.incomes)) {
+            persisted.incomes = migrateEntries(persisted.incomes);
+          }
+          if (Array.isArray(persisted.expenses)) {
+            persisted.expenses = migrateEntries(persisted.expenses);
+          }
+        }
+        return persisted as AppStore;
+      },
       partialize: (state) => ({
         incomeCategories: state.incomeCategories,
         expenseCategories: state.expenseCategories,
@@ -385,7 +419,6 @@ export const useAppStore = create<AppStore>()(
         goals: state.goals,
         recommendations: state.recommendations
       }),
-      // Nach dem Laden aus dem Storage: Date-Felder rehydrieren
       onRehydrateStorage: () => (state) => {
         if (state) {
           const hydrated = rehydrateDates(state);

@@ -14,18 +14,13 @@ function parseDateField(val: any): Date | undefined {
 }
 
 /**
- * Legacy normalizer: older store versions wrote amount as cents but
- * without the amountCents mirror field. Backfill it so the adapter
- * can rely on the explicit "amountCents present → cents" contract.
+ * Post-migration safety: if amountCents is missing, leave it absent so
+ * the adapter's heuristic in fromRepositories.ts correctly treats
+ * `amount` as Euro and calls euroToCents().  Previously this function
+ * blindly copied amount → amountCents, which falsely certified Euro
+ * values as Cents.
  */
 function ensureAmountCentsMirror(entry: any): any {
-  if (
-    typeof entry.amount === 'number' &&
-    Number.isFinite(entry.amount) &&
-    (entry.amountCents === undefined || entry.amountCents === null)
-  ) {
-    return { ...entry, amountCents: Math.round(entry.amount) };
-  }
   return entry;
 }
 
