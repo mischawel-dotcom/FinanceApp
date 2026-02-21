@@ -121,14 +121,10 @@ export default function DashboardPage() {
     .slice(0, 3);
 
   return (
-    <>
-      <div style={{position:"fixed", top:8, right:8, padding:"4px 8px", background:"#000", color:"#fff", fontSize:12, zIndex:9999}}>
-        DASHBOARD: DashboardPage
-      </div>
-      <div className="space-y-6">
+      <div className="space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-1 text-sm lg:text-base">
           {format(now, 'MMMM yyyy')} - Dein finanzieller Überblick
         </p>
       </div>
@@ -136,28 +132,28 @@ export default function DashboardPage() {
       {/* Planning Preview with KPI callback */}
       <DashboardPlanningPreview onFlowKpis={handleFlowKpis} />
 
-      {/* Main KPIs (Flow-only, from planning projection) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Main KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600">
+          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Einnahmen</div>
+          <div className="text-lg lg:text-2xl font-bold text-success-600">
             +{formatCentsEUR(flowKpis?.incomeCents ?? 0)}
           </div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600">
+          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Ausgaben</div>
+          <div className="text-lg lg:text-2xl font-bold text-danger-600">
             -{formatCentsEUR(
               (flowKpis?.boundCents ?? 0) + (flowKpis?.plannedCents ?? 0) + (flowKpis?.investedCents ?? 0)
             )}
           </div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Saldo (Monat)</div>
-          <div className={`text-2xl font-bold ${(flowKpis?.freeCents ?? 0) >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Saldo</div>
+          <div className={`text-lg lg:text-2xl font-bold ${(flowKpis?.freeCents ?? 0) >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
             {(flowKpis?.freeCents ?? 0) >= 0 ? '+' : ''}{formatCentsEUR(flowKpis?.freeCents ?? 0)}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-[10px] lg:text-xs text-gray-500 mt-0.5">
             Sparquote: {
               flowKpis && flowKpis.incomeCents > 0
                 ? (((flowKpis.plannedCents + flowKpis.investedCents) / flowKpis.incomeCents) * 100).toFixed(1)
@@ -166,11 +162,11 @@ export default function DashboardPage() {
           </div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Vermögen</div>
-          <div className="text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValueCents)}</div>
+          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Vermögen</div>
+          <div className="text-lg lg:text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValueCents)}</div>
           {assetGainCents !== 0 && (
-            <div className={`text-xs mt-1 ${assetGainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {assetGainCents >= 0 ? '+' : ''}{formatCentsEUR(assetGainCents)} Gewinn
+            <div className={`text-[10px] lg:text-xs mt-0.5 ${assetGainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+              {assetGainCents >= 0 ? '+' : ''}{formatCentsEUR(assetGainCents)}
             </div>
           )}
         </Card>
@@ -298,6 +294,5 @@ export default function DashboardPage() {
         </Card>
       )}
     </div>
-    </>
   );
 }
