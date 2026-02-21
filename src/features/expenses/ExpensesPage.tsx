@@ -309,7 +309,7 @@ export default function ExpensesPage() {
           {/* Desktop: Table */}
           <div className="hidden lg:block">
             <Table
-              data={expenseCategories.sort((a, b) => b.importance - a.importance)}
+              data={expenseCategories.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0))}
               columns={categoryColumns}
               emptyMessage="Noch keine Kategorien vorhanden"
             />
@@ -320,7 +320,7 @@ export default function ExpensesPage() {
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Kategorien vorhanden</div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {expenseCategories.sort((a, b) => b.importance - a.importance).map((cat) => (
+                {expenseCategories.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0)).map((cat) => (
                   <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}

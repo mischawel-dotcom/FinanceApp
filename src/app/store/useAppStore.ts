@@ -230,7 +230,7 @@ export const useAppStore = create<AppStore>()(
           updatedAt: now,
         };
         set((state) => ({
-          expenses: [...state.expenses, newExpense],
+          expenses: [...state.expenses, newExpense as any],
         }));
       },
       updateExpense: async (payload: any) => {

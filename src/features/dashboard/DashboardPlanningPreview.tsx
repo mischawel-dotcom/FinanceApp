@@ -92,7 +92,7 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const currentBuckets = current?.buckets ?? { bound: 0, planned: 0, invested: 0, free: 0 };
   const heroFreeCents = currentBuckets.free ?? 0;
   const dashboardRecommendations = projection
-    ? selectDashboardRecommendations(projection, storeGoals, heroFreeCents) || []
+    ? selectDashboardRecommendations(projection, storeGoals as any, heroFreeCents) || []
     : [];
 
   // Find plannedCents und Breakdown für aktuellen Monat
@@ -103,7 +103,7 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const plannedGoalsList = storeGoals
     .map(g => ({
       name: g.name,
-      amount: plannedBreakdown[(g.goalId ?? g.id)] ?? 0,
+      amount: plannedBreakdown[((g as any).goalId ?? g.id)] ?? 0,
     }))
     .filter(g => g.amount > 0);
 
@@ -235,15 +235,15 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
           return (
             <div className="grid gap-1.5 text-sm">
               {sortedGoals.slice(0, 3).map((tg) => {
-                const goal = storeGoals.find(g => g.goalId === tg.goalId);
+                const goal = storeGoals.find(g => g.id === tg.id);
                 if (!goal) return null;
-                const currentCents = typeof goal.currentAmountCents === 'number' && Number.isFinite(goal.currentAmountCents) ? goal.currentAmountCents : 0;
-                const targetCents = typeof goal.targetAmountCents === 'number' && Number.isFinite(goal.targetAmountCents) ? goal.targetAmountCents : 0;
+                const currentCents = Math.round((goal.currentAmount ?? 0) * 100);
+                const targetCents = Math.round((goal.targetAmount ?? 0) * 100);
                 const monthlyCents = typeof goal.monthlyContributionCents === 'number' && Number.isFinite(goal.monthlyContributionCents) ? goal.monthlyContributionCents : 0;
                 const targetDate = goal.targetDate ? (typeof goal.targetDate === 'string' ? new Date(goal.targetDate) : goal.targetDate) : undefined;
                 const dateString = targetDate ? `${targetDate.getDate().toString().padStart(2, '0')}.${(targetDate.getMonth()+1).toString().padStart(2, '0')}.${targetDate.getFullYear()}` : '—';
                 return (
-                  <div key={goal.goalId || goal.id}>
+                  <div key={goal.id}>
                     <b>{goal.name}</b> (Prio {goal.priority})<br />
                     Fortschritt: {formatCents(currentCents)} / {formatCents(targetCents)}<br />
                     Sparrate: {formatCents(monthlyCents)} · Zieldatum: {dateString}

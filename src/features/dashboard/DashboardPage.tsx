@@ -189,7 +189,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className={`font-semibold ${txn.type === 'income' ? 'text-success-600' : 'text-danger-600'}`}>
-                    {txn.type === 'income' ? '+' : '-'}{formatCents(normalizeCents(txn.amountCents, txn.amount))}
+                    {txn.type === 'income' ? '+' : '-'}{formatCents(normalizeCents((txn as any).amountCents, txn.amount))}
                   </div>
                 </div>
               ))}
@@ -240,7 +240,7 @@ export default function DashboardPage() {
         <Card title="Wichtigste Ziele">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {priorityGoals.map((goal) => {
-              const targetCents = goal.targetAmountCents ?? 0;
+              const targetCents = (goal as any).targetAmountCents ?? Math.round((goal.targetAmount ?? 0) * 100);
               const currentCents =
                 typeof (goal as any).currentAmountCents === "number"
                   ? (goal as any).currentAmountCents

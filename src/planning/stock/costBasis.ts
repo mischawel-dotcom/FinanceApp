@@ -1,5 +1,5 @@
 // Minimaltyp für PlanInput.assets (kein voller Asset-Typ nötig)
-import type { AssetCostBasisPoint } from "@/planning/types";
+import type { AssetCostBasisPoint, MonthKey } from "@/planning/types";
 
 type AssetLikeForCostBasis = {
   id?: string;
@@ -9,7 +9,7 @@ type AssetLikeForCostBasis = {
 
 export function computeAssetCostBasisTimeline(
   assets: AssetLikeForCostBasis[] | undefined,
-  monthKeys: string[]
+  monthKeys: MonthKey[]
 ): Record<string, AssetCostBasisPoint[]> {
   if (!assets || assets.length === 0) return {};
   const result: Record<string, AssetCostBasisPoint[]> = {};

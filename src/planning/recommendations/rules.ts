@@ -1,4 +1,4 @@
-import { PlanningPlanningRecommendation } from "./types";
+import type { PlanningRecommendation } from "./types";
 import type { PlanProjection } from "../types";
 import type { Goal } from "../../domain/types";
 import { formatCents } from "../../ui/formatMoney";
