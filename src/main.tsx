@@ -18,17 +18,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 );
 
-// Service Worker Registrierung (nur Production)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then(
-      () => {
-        // ...removed debug log...
-      },
-      (error) => {
-        // ...kept error log for real error handling...
-        console.error('Service Worker registration failed:', error);
-      }
+    navigator.serviceWorker.register(import.meta.env.BASE_URL + 'service-worker.js').catch(
+      (error) => console.error('Service Worker registration failed:', error)
     );
   });
 }
