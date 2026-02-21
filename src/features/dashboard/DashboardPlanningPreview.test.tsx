@@ -121,14 +121,23 @@ vi.mock("react-router-dom", async () => {
 
 // Parametrized goals for useAppStore
 let mockGoals: any[] = [];
+const stableIncomes: any[] = [];
+const stableExpenses: any[] = [];
+const stableAssets: any[] = [];
 vi.mock("@/app/store/useAppStore", () => ({
-  useAppStore: () => ({
-    goals: mockGoals,
-    loadData: vi.fn(),
-    createGoal: vi.fn(),
-    updateGoal: vi.fn(),
-    deleteGoal: vi.fn(),
-  }),
+  useAppStore: (selector?: (s: any) => any) => {
+    const state = {
+      goals: mockGoals,
+      incomes: stableIncomes,
+      expenses: stableExpenses,
+      assets: stableAssets,
+      loadData: vi.fn(),
+      createGoal: vi.fn(),
+      updateGoal: vi.fn(),
+      deleteGoal: vi.fn(),
+    };
+    return selector ? selector(state) : state;
+  },
 }));
 
 // Stable planFacade mock

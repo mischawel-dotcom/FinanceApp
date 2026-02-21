@@ -73,6 +73,7 @@ function getMonthKeys(startMonth: MonthKey, count: number): MonthKey[] {
   return keys;
 }
 // Helper: normalize amount to monthly based on Interval type (always integer cents)
+// Used for EXPENSES (budget reservation spread across months).
 function normalize(amount: number, interval: Interval): number {
   switch (interval) {
     case 'monthly': return amount;
@@ -81,6 +82,28 @@ function normalize(amount: number, interval: Interval): number {
     case 'yearly': return Math.round(amount / 12);
     default: return 0;
   }
+}
+
+// Helper: check if a specific month is an occurrence month for a non-monthly interval.
+// E.g. yearly income in November → occurs in 2026-11, 2027-11, ...
+function intervalMonths(interval: Interval): number {
+  switch (interval) {
+    case 'monthly': return 1;
+    case 'quarterly': return 3;
+    case 'semi_yearly': return 6;
+    case 'yearly': return 12;
+    default: return 1;
+  }
+}
+
+function isOccurrenceMonth(month: MonthKey, startDate: string | undefined, interval: Interval): boolean {
+  if (interval === 'monthly') return true;
+  if (!startDate) return true;
+  const [sYear, sMonth] = startDate.slice(0, 7).split('-').map(Number);
+  const [mYear, mMonth] = month.split('-').map(Number);
+  const diff = (mYear - sYear) * 12 + (mMonth - sMonth);
+  if (diff < 0) return false;
+  return diff % intervalMonths(interval) === 0;
 }
 
 /**
@@ -96,10 +119,7 @@ export function buildPlanProjection(
 
   const incomes = input.incomes.map(i => {
     assertFiniteIntegerCents(i.amount, `income[${i.id}].amount`);
-    return {
-      ...i,
-      monthly: normalize(i.amount, i.interval)
-    };
+    return { ...i };
   });
 
   const expenses = input.expenses.map(e => {
@@ -150,16 +170,19 @@ export function buildPlanProjection(
     }
     // planned is always the sum of plannedGoalBreakdownById (no fallback)
     const planned = Object.values(plannedGoalBreakdownById).reduce((a, b) => a + b, 0);
-    // Recurring/normal incomes: unchanged
+    // Recurring incomes: lump-sum in occurrence months (not normalized).
+    // Monthly incomes contribute every month; yearly/quarterly only in their specific months.
     const recurringIncomeCents = incomes
       .filter(i => {
         const startM = i.startDate ? i.startDate.slice(0, 7) : undefined;
         const endM = i.endDate ? i.endDate.slice(0, 7) : undefined;
-        // Exclude one-time incomes
         const isOneTime = i.startDate && i.endDate && i.startDate === i.endDate;
-        return !isOneTime && (!startM || month >= startM) && (!endM || month <= endM);
+        if (isOneTime) return false;
+        if (startM && month < startM) return false;
+        if (endM && month > endM) return false;
+        return isOccurrenceMonth(month, i.startDate, i.interval);
       })
-      .reduce((sum, i) => sum + i.monthly, 0);
+      .reduce((sum, i) => sum + i.amount, 0);
     // One-time incomes: only in their month, cents-only contract
     const oneTimeIncomeCents = input.incomes
       .filter(i => i.startDate && i.endDate && i.startDate === i.endDate && month === i.startDate.slice(0, 7))

@@ -75,13 +75,13 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="min-h-full sm:flex sm:items-center sm:justify-center sm:p-4">
+      <div className="relative z-10 min-h-full sm:flex sm:items-center sm:justify-center sm:p-4">
         <div
           ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`bg-white dark:bg-gray-800 w-full min-h-screen sm:min-h-0 sm:rounded-lg sm:shadow-xl sm:max-h-[90vh] flex flex-col ${sizes[size]}`}
+          className={`relative bg-white dark:bg-gray-800 w-full min-h-screen sm:min-h-0 sm:rounded-lg sm:shadow-xl sm:max-h-[90vh] flex flex-col ${sizes[size]}`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">

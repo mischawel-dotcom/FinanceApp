@@ -19,6 +19,9 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   // Store goals immer auf Top-Level holen (Hook order fix)
   const storeGoalsRaw = useAppStore((s) => s.goals);
   const storeGoals = Array.isArray(storeGoalsRaw) ? storeGoalsRaw : [];
+  const storeIncomes = useAppStore((s) => s.incomes);
+  const storeExpenses = useAppStore((s) => s.expenses);
+  const storeAssets = useAppStore((s) => s.assets);
 
   type Shortfall = { month: string; amount: number };
   const shortfalls: Shortfall[] = [];
@@ -81,7 +84,7 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
         setError(e instanceof Error ? e.message : String(e));
       }
     })();
-  }, []);
+  }, [storeIncomes, storeExpenses, storeGoals, storeAssets]);
 
   if (error) return <div style={{ padding: 16 }}>❌ Fehler: {error}</div>;
   if (!model) return <div style={{ padding: 16 }}>Loading planning…</div>;
