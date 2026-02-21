@@ -5,6 +5,7 @@ import type { Asset } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
 import { AssetForm } from './AssetForm';
 import { asCentsSafe } from '@shared/utils/money';
+import { formatCents } from '@/ui/formatMoney';
 
 export default function AssetsPage() {
   const { assets, createAsset, updateAsset, deleteAsset, loadData } = useAppStore();
@@ -84,15 +85,15 @@ export default function AssetsPage() {
     {
       key: 'costBasisCents',
       label: 'Kostenbasis (Eingezahlt)',
-      render: (asset: Asset) => <span>{(asCentsSafe(asset.costBasisCents) / 100).toFixed(2)} €</span>,
+      render: (asset: Asset) => <span>{formatCents(asCentsSafe(asset.costBasisCents))}</span>,
     },
     {
       key: 'monthlyContributionCents',
       label: 'Sparrate (Monat)',
       render: (asset: Asset) =>
         asCentsSafe(asset.monthlyContributionCents) > 0
-          ? <span>{(asCentsSafe(asset.monthlyContributionCents) / 100).toFixed(2)} €</span>
-          : <span className="text-gray-400">—</span>,
+          ? <span>{formatCents(asCentsSafe(asset.monthlyContributionCents))}</span>
+          : <span className="text-gray-400 dark:text-gray-500">—</span>,
     },
     {
       key: 'marketValueCents',
@@ -100,11 +101,11 @@ export default function AssetsPage() {
       render: (asset: Asset) =>
         typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents) ? (
           <span>
-            {(asCentsSafe(asset.marketValueCents) / 100).toFixed(2)} €
-            <span className="ml-1 text-xs text-gray-500">(manuell gepflegt)</span>
+            {formatCents(asCentsSafe(asset.marketValueCents))}
+            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(manuell gepflegt)</span>
           </span>
         ) : (
-          <span className="text-gray-400">—</span>
+          <span className="text-gray-400 dark:text-gray-500">—</span>
         ),
     },
     {
@@ -126,9 +127,9 @@ export default function AssetsPage() {
         return (
           <div className="text-sm">
             <div className={`font-semibold ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {gainCents >= 0 ? '+' : ''}{(asCentsSafe(gainCents) / 100).toFixed(2)} €
+              {gainCents >= 0 ? '+' : ''}{formatCents(asCentsSafe(gainCents))}
             </div>
-            <div className="text-gray-500 text-xs">
+            <div className="text-gray-500 dark:text-gray-400 text-xs">
               {gainCents >= 0 ? '+' : ''}{Number.isFinite(gainPercent) ? gainPercent.toFixed(2) : '0'}%
             </div>
           </div>
@@ -160,25 +161,25 @@ export default function AssetsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Anlagen</h1>
-          <p className="text-gray-600 mt-1">Verwaltung von Vermögenswerten und Investitionen</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Anlagen</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Vermögenswerten und Investitionen</p>
         </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Gesamtwert Portfolio</div>
-          <div className="text-2xl font-bold text-gray-900">{(totalValue / 100).toFixed(2)} €</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gesamtwert Portfolio</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCents(totalValue)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Gesamte Kostenbasis</div>
-          <div className="text-2xl font-bold text-gray-900">{(totalCostBasis / 100).toFixed(2)} €</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gesamte Kostenbasis</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCents(totalCostBasis)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 mb-1">Gesamt Gewinn/Verlust</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gesamt Gewinn/Verlust</div>
           <div className={`text-2xl font-bold ${totalGain >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {totalGain >= 0 ? '+' : ''}{(totalGain / 100).toFixed(2)} €
+            {totalGain >= 0 ? '+' : ''}{formatCents(totalGain)}
             <span className="text-sm ml-2">({totalGain >= 0 ? '+' : ''}{totalGainPercent}%)</span>
           </div>
         </Card>
@@ -208,9 +209,9 @@ export default function AssetsPage() {
         {/* Mobile: Card List */}
         <div className="lg:hidden">
           {assets.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">Noch keine Anlagen vorhanden</div>
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Anlagen vorhanden</div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {assets.slice().sort((a, b) => {
                 const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
                 const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
@@ -228,8 +229,8 @@ export default function AssetsPage() {
                   <div key={asset.id} className="py-3 px-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{asset.name}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">{asset.name}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
                           <span>{getAssetTypeLabel(asset.type)}</span>
                           {asset.purchaseDate && (
                             <>
@@ -240,21 +241,21 @@ export default function AssetsPage() {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <div className="font-semibold text-gray-900">
-                          {(displayValue / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                        <div className="font-semibold text-gray-900 dark:text-white">
+                          {formatCents(displayValue)}
                         </div>
                         {gainPct !== null && (
                           <div className={`text-xs font-medium ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-                            {gainCents >= 0 ? '+' : ''}{(gainCents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} € ({gainCents >= 0 ? '+' : ''}{gainPct}%)
+                            {gainCents >= 0 ? '+' : ''}{formatCents(gainCents)} ({gainCents >= 0 ? '+' : ''}{gainPct}%)
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <div className="flex gap-3 text-xs text-gray-500">
-                        <span>Basis: {(costBasis / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>
+                      <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span>Basis: {formatCents(costBasis)}</span>
                         {asCentsSafe(asset.monthlyContributionCents) > 0 && (
-                          <span>Sparrate: {(asCentsSafe(asset.monthlyContributionCents) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €/M</span>
+                          <span>Sparrate: {formatCents(asCentsSafe(asset.monthlyContributionCents))}/M</span>
                         )}
                       </div>
                       <div className="flex gap-2 flex-shrink-0">

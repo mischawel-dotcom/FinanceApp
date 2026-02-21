@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { path: '/planning', label: 'Planung', icon: '📋' },
   { path: '/recommendations', label: 'Empfehlungen', icon: '💡' },
   { path: '/reports', label: 'Reports', icon: '📄' },
+  { path: '/settings', label: 'Einstellungen', icon: '🔧' },
 ];
 
 const bottomTabItems: NavItem[] = [
@@ -31,6 +32,7 @@ const moreMenuItems: NavItem[] = [
   { path: '/assets', label: 'Anlagen', icon: '📈' },
   { path: '/goals', label: 'Ziele', icon: '🎯' },
   { path: '/reports', label: 'Reports', icon: '📄' },
+  { path: '/settings', label: 'Einstellungen', icon: '🔧' },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -61,16 +63,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [isMoreOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white text-gray-900 px-3 py-2 rounded shadow"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded shadow"
       >
         Zum Inhalt springen
       </a>
 
       {/* Top Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-900 shadow-sm dark:shadow-gray-950/50 sticky top-0 z-50 border-b border-transparent dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -86,8 +88,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   aria-current={isActive(item.path) ? 'page' : undefined}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive(item.path)
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-400'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
                   }`}
                 >
                   <span className="mr-2">{item.icon}</span>
@@ -99,27 +101,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content – pb-20 on mobile for bottom bar clearance */}
+      {/* Main Content */}
       <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-8">
         <AppErrorBoundary>
           {children}
         </AppErrorBoundary>
       </main>
 
-      {/* Footer – hidden on mobile (bottom bar takes its place) */}
-      <footer className="hidden lg:block bg-white border-t border-gray-200 mt-12">
+      {/* Footer */}
+      <footer className="hidden lg:block bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} Finance App - Entwickelt mit React & TypeScript
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            &copy; {new Date().getFullYear()} Finance App - Entwickelt mit React & TypeScript
           </p>
         </div>
       </footer>
 
-      {/* ═══════════════════════════════════════════
-          Mobile Bottom Tab Bar (visible < lg)
-          ═══════════════════════════════════════════ */}
+      {/* Mobile Bottom Tab Bar */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 safe-area-bottom"
         aria-label="Mobile Navigation"
       >
         <div className="flex items-stretch justify-around">
@@ -130,18 +130,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               aria-current={isActive(item.path) ? 'page' : undefined}
               className={`flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] transition-colors ${
                 isActive(item.path)
-                  ? 'text-primary-600'
-                  : 'text-gray-500 active:text-gray-700'
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-200'
               }`}
             >
               <span className="text-xl leading-none">{item.icon}</span>
               <span className={`text-[10px] mt-1 font-medium ${
-                isActive(item.path) ? 'text-primary-600' : 'text-gray-500'
+                isActive(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 {item.label}
               </span>
               {isActive(item.path) && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full" />
               )}
             </Link>
           ))}
@@ -155,28 +155,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               aria-controls="more-menu"
               className={`flex flex-col items-center justify-center w-full py-2 min-h-[56px] transition-colors ${
                 isMoreActive
-                  ? 'text-primary-600'
+                  ? 'text-primary-600 dark:text-primary-400'
                   : isMoreOpen
-                    ? 'text-gray-700'
-                    : 'text-gray-500 active:text-gray-700'
+                    ? 'text-gray-700 dark:text-gray-200'
+                    : 'text-gray-500 dark:text-gray-400 active:text-gray-700 dark:active:text-gray-200'
               }`}
             >
               <span className="text-xl leading-none">⋯</span>
               <span className={`text-[10px] mt-1 font-medium ${
-                isMoreActive ? 'text-primary-600' : 'text-gray-500'
+                isMoreActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 Mehr
               </span>
               {isMoreActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full" />
               )}
             </button>
 
-            {/* More Menu Popover */}
             {isMoreOpen && (
               <div
                 id="more-menu"
-                className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 animate-in fade-in slide-in-from-bottom-2"
+                className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2"
               >
                 {moreMenuItems.map((item) => (
                   <Link
@@ -185,8 +184,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     aria-current={isActive(item.path) ? 'page' : undefined}
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
                       isActive(item.path)
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-gray-700 active:bg-gray-100'
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-400'
+                        : 'text-gray-700 active:bg-gray-100 dark:text-gray-300 dark:active:bg-gray-700'
                     }`}
                   >
                     <span className="text-lg">{item.icon}</span>

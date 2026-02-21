@@ -1,0 +1,18 @@
+Umsetzungsstrategie:
+Ein Branch, aber atomare Commits
+Statt alles am Ende in einen großen Commit zu packen, würde ich pro Priorität einen eigenen Commit machen:
+Commit	Inhalt	Vorteil
+Commit 1	P1: Bottom Tab Bar	Sofort testbar auf dem Handy
+Commit 2	P2: Tabellen → Card/List-View	Unabhängig von P1, einzeln revertbar
+Commit 3	P3: PWA-Setup	Kann zwischendurch auf GitHub Pages getestet werden
+Commit 4	P4: Touch-Targets + Spacing	Kleine, risikoarme Änderungen
+Commit 5	P5: Content-Dichte / Tabs	Betrifft mehrere Seiten
+Commit 6	P6: iOS Input-Fix	Einzeiler
+Warum so:
+Du kannst nach jedem Commit auf dem Handy testen und Feedback geben
+Falls etwas nicht gefällt, können wir einzelne Commits gezielt anpassen
+Am Ende: Branch in main mergen, alle Commits bleiben sauber in der History
+Optional zwischendurch Push auf GitHub, damit du auf dem Handy via GitHub Pages testen kannst
+Alternative: Mehrere Branches
+Wenn du lieber nach jedem großen Feature (z.B. P1+P2) in main mergen und ein Release machen willst, könnten wir auch splitten – z.B. Phase-9a-Mobile-Nav, Phase-9b-PWA. Aber bei der aktuellen Projektgröße halte ich einen Branch mit sauberen Commits für effizienter.
+Mein Votum: Ein Branch, pro Punkt committen, nach jedem Commit testen

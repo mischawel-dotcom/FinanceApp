@@ -25,3 +25,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     );
   });
 }
+
+if (navigator.storage?.persist) {
+  navigator.storage.persist().catch(() => {});
+}

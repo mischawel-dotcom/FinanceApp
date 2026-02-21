@@ -22,7 +22,7 @@ export function Table<T extends Record<string, any>>({
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">{emptyMessage}</p>
+        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       </div>
     );
   }
@@ -33,11 +33,7 @@ export function Table<T extends Record<string, any>>({
         <thead className={tableHead}>
           <tr>
             {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={tableHeaderCell}
-              >
+              <th key={column.key} scope="col" className={tableHeaderCell}>
                 {column.label}
               </th>
             ))}

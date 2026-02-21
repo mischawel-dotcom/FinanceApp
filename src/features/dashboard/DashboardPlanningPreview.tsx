@@ -4,11 +4,10 @@ const DEBUG = import.meta.env.DEV && import.meta.env.VITE_DEBUG === "1";
 
 import type { DashboardModel } from "@/planning/planFacade";
 import { buildDashboardModelFromRepositories } from "@/planning/planFacade";
-import { formatCentsEUR } from "@/ui/formatMoney";
+import { formatCents } from "@/ui/formatMoney";
 import { selectDashboardRecommendations } from "@/planning/recommendations";
 import { useNavigate } from "react-router-dom";
 import { handleRecommendationAction } from "./recommendationActions";
-import type { Goal } from "../../domain/types";
 
 // Accepts optional onFlowKpis callback to send current month KPIs to parent
 
@@ -21,19 +20,8 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const storeGoalsRaw = useAppStore((s) => s.goals);
   const storeGoals = Array.isArray(storeGoalsRaw) ? storeGoalsRaw : [];
 
-  // Explicitly type arrays and remove unused
   type Shortfall = { month: string; amount: number };
   const shortfalls: Shortfall[] = [];
-  type GoalSummary = {
-    goalId: string;
-    name: string;
-    priority: number;
-    etaMonth?: string;
-    reachable: boolean;
-  };
-  const goals: GoalSummary[] = [];
-  // DomainGoal type is imported from planning/types or domain/types
-  const domainGoals: Goal[] = [];
   const projection = model?.projection;
   const flowKpis = useMemo(() => {
     if (model && model.projection) {
@@ -104,18 +92,18 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const currentBuckets = current?.buckets ?? { bound: 0, planned: 0, invested: 0, free: 0 };
   const heroFreeCents = currentBuckets.free ?? 0;
   const dashboardRecommendations = projection
-    ? selectDashboardRecommendations(projection, domainGoals, heroFreeCents) || []
+    ? selectDashboardRecommendations(projection, storeGoals, heroFreeCents) || []
     : [];
 
   // Find plannedCents und Breakdown für aktuellen Monat
   const plannedCents = currentBuckets.planned;
   const plannedBreakdown = current?.plannedGoalBreakdownById ?? {};
 
-  // Helper for breakdown UI
-  const plannedGoalsList = goals
+  // Helper for breakdown UI – use storeGoals (actual goals from store)
+  const plannedGoalsList = storeGoals
     .map(g => ({
       name: g.name,
-      amount: plannedBreakdown[g.goalId] ?? 0,
+      amount: plannedBreakdown[(g.goalId ?? g.id)] ?? 0,
     }))
     .filter(g => g.amount > 0);
 
@@ -124,19 +112,19 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
 
 
   return (
-    <div style={{ padding: 16, display: "grid", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Planning Preview</h2>
+    <div className="p-4 grid gap-3 text-gray-900 dark:text-gray-100">
+      <h2 className="text-lg font-semibold">Planning Preview</h2>
 
       {/* Empfehlungen-Block */}
       <div data-testid="dashboard-recommendations">
         {dashboardRecommendations.length > 0 && (
           <>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Empfehlungen</div>
-            <div style={{ display: "grid", gap: 8 }}>
+            <div className="font-semibold mb-2">Empfehlungen</div>
+            <div className="grid gap-2">
               {dashboardRecommendations.slice(0, 2).map((rec, i) => {
                 let explanation = null;
                 if (rec.type === "shortfall_risk" && rec.evidence?.month && typeof rec.evidence.amountCents === "number") {
-                  explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCentsEUR(rec.evidence.amountCents)}.`;
+                  explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCents(rec.evidence.amountCents)}.`;
                 } else if (rec.type === "low_slack") {
                   explanation = "Dein freier Spielraum ist aktuell sehr gering.";
                 } else if (rec.type === "goal_contrib_issue" && rec.evidence?.goalId) {
@@ -146,24 +134,24 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
                   <div
                     key={rec.id || i}
                     data-testid="dashboard-recommendation"
-                    style={{ border: "1px solid #e0b200", borderRadius: 8, padding: 10, background: "#fffbe6" }}
+                    className="border border-yellow-400 dark:border-yellow-600 rounded-lg p-3 bg-yellow-50 dark:bg-yellow-900/20"
                   >
                     {rec.type === "shortfall_risk" ? (
-                      <span data-testid="dashboard-recommendation-badge" style={{ background: "#e57373", color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 12, marginRight: 8 }}>Risiko</span>
+                      <span data-testid="dashboard-recommendation-badge" className="inline-block bg-red-400 text-white rounded px-2 py-0.5 text-xs mr-2">Risiko</span>
                     ) : (
-                      <span data-testid="dashboard-recommendation-badge" style={{ background: "#1976d2", color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 12, marginRight: 8 }}>Hinweis</span>
+                      <span data-testid="dashboard-recommendation-badge" className="inline-block bg-blue-600 text-white rounded px-2 py-0.5 text-xs mr-2">Hinweis</span>
                     )}
                     <b>{rec.title}</b>
-                    <div style={{ fontSize: 14, marginTop: 4 }}>{rec.reason}</div>
+                    <div className="text-sm mt-1">{rec.reason}</div>
                     {explanation && (
-                      <div style={{ fontSize: 13, marginTop: 6, color: "#555" }} data-testid="dashboard-recommendation-explanation">
+                      <div className="text-sm mt-1.5 text-gray-600 dark:text-gray-400" data-testid="dashboard-recommendation-explanation">
                         {explanation}
                       </div>
                     )}
                     {rec.action && (
                       <button
                         data-testid="dashboard-recommendation-action"
-                        style={{ marginTop: 10, padding: "4px 14px", borderRadius: 6, border: "1px solid #1976d2", background: "#e3f2fd", color: "#1976d2", fontWeight: 600, cursor: "pointer" }}
+                        className="mt-2.5 px-3 py-1 rounded-md border border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold text-sm cursor-pointer"
                         onClick={() => handleRecommendationAction(rec.action!, { navigate })}
                       >
                         {rec.action.label}
@@ -177,81 +165,75 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
         )}
       </div>
 
-
-      <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
-        <div style={{ fontSize: 12, opacity: 0.7 }}>Verfügbar (aktueller Monat)</div>
-        <div style={{ fontSize: 28, fontWeight: 700 }}>{formatCentsEUR(currentBuckets.free)}</div>
-
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <div className="text-xs text-gray-500 dark:text-gray-400">Verfügbar (aktueller Monat)</div>
+        <div className="text-3xl font-bold mt-1">{formatCents(currentBuckets.free)}</div>
       </div>
 
-      <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>4 Töpfe (aktueller Monat)</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <div>Gebunden: <b>{formatCentsEUR(currentBuckets.bound)}</b></div>
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <div className="font-semibold mb-2">4 Töpfe (aktueller Monat)</div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>Gebunden: <b>{formatCents(currentBuckets.bound)}</b></div>
           <div>
-            Verplant: <b>{formatCentsEUR(plannedCents)}</b>
-            <span style={{ marginLeft: 8 }}>
-              <button
-                style={{ fontSize: 12, padding: '2px 6px', borderRadius: 6, border: '1px solid #aaa', background: '#f9f9f9', cursor: 'pointer' }}
-                onClick={() => setShowBreakdown(v => !v)}
-              >Details</button>
-            </span>
+            Verplant: <b>{formatCents(plannedCents)}</b>
+            <button
+              className="ml-2 text-xs px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 cursor-pointer"
+              onClick={() => setShowBreakdown(v => !v)}
+            >Details</button>
           </div>
-          <div>Investiert (Monat): <b>{formatCentsEUR(currentBuckets.invested)}</b></div>
-          <div>Frei: <b>{formatCentsEUR(currentBuckets.free)}</b></div>
+          <div>Investiert: <b>{formatCents(currentBuckets.invested)}</b></div>
+          <div>Frei: <b>{formatCents(currentBuckets.free)}</b></div>
         </div>
-        <div style={{ fontSize: '0.9em', color: '#6b7280', marginTop: 8 }}>
-          Hinweis: Vermögens-Bestand (Assets) ist separat und nicht Teil der 4 Cashflow-Töpfe. Bestand siehe Vermögen/Anlagen.
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Hinweis: Vermögens-Bestand (Assets) ist separat und nicht Teil der 4 Cashflow-Töpfe.
         </div>
-        {/* Breakdown Popover/Details */}
-    {showBreakdown && (
-      <div style={{ marginTop: 12, border: '1px solid #ccc', borderRadius: 8, background: '#fff', padding: 8 }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>Verplant Breakdown</div>
-      {plannedGoalsList.length === 0 ? (
-        <div style={{ color: '#888' }}>Keine geplanten Zielbeiträge im aktuellen Monat.</div>
-      ) : (
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-        {plannedGoalsList.map(g => (
-          <li key={g.name} style={{ marginBottom: 2 }}>
-          {g.name}: <b>{formatCentsEUR(g.amount)}</b>
-          </li>
-        ))}
-        </ul>
-      )}
+        {showBreakdown && (
+          <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700 p-2">
+            <div className="font-semibold mb-1 text-sm">Verplant Breakdown</div>
+            {plannedGoalsList.length === 0 ? (
+              <div className="text-gray-500 dark:text-gray-400 text-sm">Keine geplanten Zielbeiträge im aktuellen Monat.</div>
+            ) : (
+              <ul className="list-none p-0 m-0 text-sm">
+                {plannedGoalsList.map(g => (
+                  <li key={g.name} className="mb-0.5">
+                    {g.name}: <b>{formatCents(g.amount)}</b>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
-    )}
-    </div>
 
-      <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Timeline (Free)</div>
-        <div style={{ fontFamily: "monospace", fontSize: 12, maxHeight: 220, overflow: "auto" }}>
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <div className="font-semibold mb-2">Timeline (Free)</div>
+        <div className="font-mono text-xs max-h-56 overflow-auto">
           {(() => {
             const timeline = projection?.timeline ?? [];
             if (timeline.length === 0) {
-              return <div style={{ opacity: 0.7 }}>Keine Timeline-Daten.</div>;
+              return <div className="text-gray-500 dark:text-gray-400">Keine Timeline-Daten.</div>;
             }
             return timeline.slice(0, 12).map((item) => (
               <div key={item.month}>
-                {item.month}: {formatCentsEUR(item.buckets?.free ?? 0)}
+                {item.month}: {formatCents(item.buckets?.free ?? 0)}
               </div>
             ));
           })()}
         </div>
       </div>
 
-      <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Top Ziele (priorisiert)</div>
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <div className="font-semibold mb-2">Top Ziele (priorisiert)</div>
         {(() => {
           if (storeGoals.length === 0) {
-            return <div style={{ opacity: 0.7 }}>Keine Ziele gefunden.</div>;
+            return <div className="text-gray-500 dark:text-gray-400">Keine Ziele gefunden.</div>;
           }
-          // Sortiere nach Priorität
           const priorityOrder: Record<'critical' | 'high' | 'medium' | 'low', number> = { critical: 0, high: 1, medium: 2, low: 3 };
           const sortedGoals = [...storeGoals].sort((a, b) => {
             return priorityOrder[a.priority as 'critical' | 'high' | 'medium' | 'low'] - priorityOrder[b.priority as 'critical' | 'high' | 'medium' | 'low'];
           });
           return (
-            <div style={{ display: "grid", gap: 6 }}>
+            <div className="grid gap-1.5 text-sm">
               {sortedGoals.slice(0, 3).map((tg) => {
                 const goal = storeGoals.find(g => g.goalId === tg.goalId);
                 if (!goal) return null;
@@ -263,9 +245,8 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
                 return (
                   <div key={goal.goalId || goal.id}>
                     <b>{goal.name}</b> (Prio {goal.priority})<br />
-                    Fortschritt: {formatCentsEUR(currentCents)} / {formatCentsEUR(targetCents)}<br />
-                    Monatliche Sparrate: {formatCentsEUR(monthlyCents)}<br />
-                    Zieldatum: {dateString}
+                    Fortschritt: {formatCents(currentCents)} / {formatCents(targetCents)}<br />
+                    Sparrate: {formatCents(monthlyCents)} · Zieldatum: {dateString}
                   </div>
                 );
               })}
@@ -274,15 +255,15 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
         })()}
       </div>
 
-      <div style={{ padding: 12, border: "1px solid #3333", borderRadius: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Shortfalls</div>
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <div className="font-semibold mb-2">Shortfalls</div>
         {shortfalls.length === 0 ? (
-          <div style={{ opacity: 0.7 }}>Keine Shortfalls im Horizont.</div>
+          <div className="text-gray-500 dark:text-gray-400">Keine Shortfalls im Horizont.</div>
         ) : (
-          <div style={{ display: "grid", gap: 6 }}>
+          <div className="grid gap-1.5 text-sm">
             {shortfalls.slice(0, 6).map((s) => (
               <div key={s.month}>
-                {s.month}: <b>{formatCentsEUR(s.amount)}</b>
+                {s.month}: <b>{formatCents(s.amount)}</b>
               </div>
             ))}
           </div>

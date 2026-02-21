@@ -1,4 +1,5 @@
 import { euroInputToCents, centsToEuroInput } from '@/shared/utils/money';
+import { getCurrencySymbol } from '@/shared/hooks/useCurrency';
 import { useState, FormEvent } from 'react';
 import { z, ZodIssue } from 'zod';
 import { format } from 'date-fns';
@@ -22,7 +23,6 @@ const recurrenceOptions: { value: RecurrenceInterval; label: string }[] = [
 ];
 
 export function IncomeForm({ initialData, categories, onSubmit, onCancel }: IncomeFormProps) {
-  // Prefill amount as EUR string if editing
   const amountStr =
     typeof initialData?.amount === 'number' && Number.isFinite(initialData.amount)
       ? centsToEuroInput(initialData.amount)
@@ -40,7 +40,6 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  // Zod Schema für Validierung
   const schema = z.object({
     title: z.string().min(1, 'Titel ist erforderlich'),
     amount: z.string().refine((val) => !!val && parseFloat(val) > 0, {
@@ -54,7 +53,6 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
   });
 
   const validate = () => {
-    // Kategorie-Existenz prüfen
     const categoryExists = categories.some((cat) => cat.id === formData.categoryId);
     const result = schema.safeParse(formData);
     let fieldErrors: Record<string, string> = {};
@@ -78,7 +76,7 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
     if (!validate()) return;
     try {
       const amountCents = euroInputToCents(formData.amount);
-      const payload = {
+      onSubmit({
         title: formData.title,
         amount: amountCents,
         date: new Date(formData.date),
@@ -86,20 +84,18 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
         isRecurring: formData.isRecurring,
         recurrenceInterval: formData.isRecurring ? formData.recurrenceInterval : undefined,
         notes: formData.notes || undefined,
-      };
-      onSubmit(payload);
+      });
     } catch (err: any) {
       setGeneralError(err?.message || 'Unbekannter Fehler beim Speichern');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="income-form">
+    <form onSubmit={handleSubmit} className="space-y-3" data-testid="income-form">
       {generalError && (
-        <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded mb-2">
-          {generalError}
-        </div>
+        <div className="bg-danger-100 text-danger-700 px-4 py-2 rounded text-sm">{generalError}</div>
       )}
+
       <Input
         label="Titel"
         required
@@ -109,24 +105,25 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
         placeholder="z.B. Gehalt Januar"
       />
 
-      <Input
-        label="Betrag (€)"
-        type="number"
-        step="0.01"
-        required
-        value={formData.amount}
-        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-        error={errors.amount}
-        placeholder="0.00"
-      />
-
-      <Input
-        label="Datum"
-        type="date"
-        required
-        value={formData.date}
-        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label={`Betrag (${getCurrencySymbol()})`}
+          type="number"
+          step="0.01"
+          required
+          value={formData.amount}
+          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+          error={errors.amount}
+          placeholder="0.00"
+        />
+        <Input
+          label="Datum"
+          type="date"
+          required
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+        />
+      </div>
 
       <Select
         label="Kategorie"
@@ -140,42 +137,38 @@ export function IncomeForm({ initialData, categories, onSubmit, onCancel }: Inco
         ]}
       />
 
-      <div>
+      <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={formData.isRecurring}
             onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 w-5 h-5 dark:bg-gray-700"
           />
-          <span className="text-sm font-medium text-gray-700">Wiederkehrende Einnahme</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Wiederkehrend</span>
         </label>
+        {formData.isRecurring && (
+          <div className="flex-1">
+            <Select
+              value={formData.recurrenceInterval}
+              onChange={(e) => setFormData({ ...formData, recurrenceInterval: e.target.value as RecurrenceInterval })}
+              options={recurrenceOptions}
+            />
+          </div>
+        )}
       </div>
-
-      {formData.isRecurring && (
-        <Select
-          label="Wiederholung"
-          value={formData.recurrenceInterval}
-          onChange={(e) => setFormData({ ...formData, recurrenceInterval: e.target.value as RecurrenceInterval })}
-          options={recurrenceOptions}
-        />
-      )}
 
       <Textarea
         label="Notizen"
         value={formData.notes}
         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         placeholder="Optionale Notizen"
-        rows={3}
+        rows={2}
       />
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Abbrechen
-        </Button>
-        <Button type="submit" variant="primary">
-          {initialData ? 'Aktualisieren' : 'Erstellen'}
-        </Button>
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel}>Abbrechen</Button>
+        <Button type="submit" variant="primary">{initialData ? 'Aktualisieren' : 'Erstellen'}</Button>
       </div>
     </form>
   );

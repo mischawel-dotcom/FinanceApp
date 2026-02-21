@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import { formatCentsEUR } from "@/ui/formatMoney";
+import { formatCents } from "@/ui/formatMoney";
 import { useAppStore } from "@/app/store/useAppStore";
 import type { FinancialGoal, GoalPriority } from "@shared/types";
 import { Button, Card, Modal } from "@shared/components";
@@ -23,9 +23,9 @@ const priorityLabels: Record<GoalPriority, string> = {
 
 function getPriorityColor(priority: GoalPriority) {
   const colors: Record<GoalPriority, string> = {
-    low: "bg-gray-200 text-gray-800",
-    medium: "bg-blue-200 text-blue-800",
-    high: "bg-orange-200 text-orange-800",
+    low: "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+    medium: "bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    high: "bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
     critical: "bg-red-600 text-white",
   };
   return colors[priority];
@@ -110,8 +110,8 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Finanzielle Ziele</h1>
-          <p className="text-gray-600 mt-1">Verfolge deine Sparziele und den Fortschritt</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Finanzielle Ziele</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Verfolge deine Sparziele und den Fortschritt</p>
         </div>
         <Button onClick={openCreateModal}>+ Neues Ziel</Button>
       </div>
@@ -119,7 +119,7 @@ export default function GoalsPage() {
       {sortedGoals.length === 0 ? (
         <Card>
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">Noch keine Ziele definiert</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Noch keine Ziele definiert</p>
             <Button onClick={openCreateModal}>Erstes Ziel erstellen</Button>
           </div>
         </Card>
@@ -150,8 +150,8 @@ export default function GoalsPage() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{goal.name}</h3>
-                        {goal.description && <p className="text-sm text-gray-600 mt-1">{goal.description}</p>}
+                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{goal.name}</h3>
+                        {goal.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{goal.description}</p>}
                         {isHighlighted && (
                           <span className="goal-row__badge" aria-label="Empfehlung">Empfehlung</span>
                         )}
@@ -162,32 +162,32 @@ export default function GoalsPage() {
                     </div>
                     <div className="space-y-3 mb-4">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Zielbetrag:</span>
-                        <span className="font-semibold">{formatCentsEUR(targetCents)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Zielbetrag:</span>
+                        <span className="font-semibold">{formatCents(targetCents)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Aktuell:</span>
-                        <span className="font-semibold text-primary-600">{formatCentsEUR(currentCents)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Aktuell:</span>
+                        <span className="font-semibold text-primary-600">{formatCents(currentCents)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Noch benötigt:</span>
-                        <span className="font-semibold text-gray-900">{formatCentsEUR(remainingCents)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Noch benötigt:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatCents(remainingCents)}</span>
                       </div>
                       <div className="flex justify-between text-sm" data-testid="goal-monthly-savings-row">
-                        <span className="text-gray-600">Monatliche Sparrate:</span>
-                        <span className="font-semibold text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">Monatliche Sparrate:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
                           {goal.monthlyContributionCents && goal.monthlyContributionCents > 0
-                            ? formatCentsEUR(goal.monthlyContributionCents)
+                            ? formatCents(goal.monthlyContributionCents)
                             : "—"}
                         </span>
                       </div>
                     </div>
                     <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                         <span>Fortschritt</span>
                         <span className="font-semibold">{progress.toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
                             progress >= 100 ? "bg-success-600" : progress >= 75 ? "bg-primary-600" : "bg-primary-400"
@@ -197,10 +197,10 @@ export default function GoalsPage() {
                       </div>
                     </div>
                     {goal.targetDate && (
-                      <div className="text-sm text-gray-600 mb-4">🗓️ Zieldatum: {format(goal.targetDate, "dd.MM.yyyy")}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">🗓️ Zieldatum: {format(goal.targetDate, "dd.MM.yyyy")}</div>
                     )}
                   </div>
-                  <div className="flex gap-2 pt-4 border-t border-gray-200">
+                  <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <Button size="sm" variant="secondary" onClick={() => openEditModal(goal)} className="flex-1">
                       Bearbeiten
                     </Button>

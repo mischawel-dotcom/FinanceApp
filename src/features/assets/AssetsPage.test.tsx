@@ -43,7 +43,7 @@ it('edits asset and updates UI immediately', async () => {
 		expect(screen.getAllByText('Test Asset 1').length).toBeGreaterThan(0);
 		const updatedRow = screen.getAllByText('Test Asset 1').map(el => el.closest('tr')).find(Boolean);
 		expect(updatedRow).toBeTruthy();
-		expect(within(updatedRow!).getByText(/1234(\.00)?\s*€/)).toBeInTheDocument();
+		expect(within(updatedRow!).getByText(/1[.\u202f]?234[,.]00\s*€/)).toBeInTheDocument();
 	});
 });
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';

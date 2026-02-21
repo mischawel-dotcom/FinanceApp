@@ -1,6 +1,8 @@
 import { PlanningPlanningRecommendation } from "./types";
 import type { PlanProjection } from "../types";
 import type { Goal } from "../../domain/types";
+import { formatCents } from "../../ui/formatMoney";
+import { getMinBufferCents } from "../../shared/hooks/useMinBuffer";
 
 // --- Rule: Shortfall Risk ---
 export function ruleShortfallRisk(projection: PlanProjection): PlanningRecommendation | null {
@@ -10,7 +12,7 @@ export function ruleShortfallRisk(projection: PlanProjection): PlanningRecommend
         id: `shortfall_risk_${mp.month}`,
         type: "shortfall_risk",
         title: "Budget-Lücke vermeiden",
-        reason: `Im Monat ${mp.month} ist dein freier Betrag negativ (${(mp.buckets.free / 100).toFixed(2)} €).`,
+        reason: `Im Monat ${mp.month} ist dein freier Betrag negativ (${formatCents(mp.buckets.free)}).`,
         evidence: { month: mp.month, amountCents: mp.buckets.free },
         actions: [
           { label: "Fixkosten prüfen", kind: "navigate" },
@@ -26,12 +28,13 @@ export function ruleShortfallRisk(projection: PlanProjection): PlanningRecommend
 
 // --- Rule: Low Slack ---
 export function ruleLowSlack(_projection: PlanProjection, heroFreeCents: number): PlanningRecommendation | null {
-  if (heroFreeCents <= 0 || heroFreeCents < 1000) {
+  const minBufferCents = getMinBufferCents();
+  if (heroFreeCents < minBufferCents) {
     return {
       id: `low_slack`,
       type: "low_slack",
       title: "Mehr Monats-Puffer aufbauen",
-      reason: "Dein verfügbarer Monats-Spielraum ist sehr klein.",
+      reason: `Dein freier Spielraum (${formatCents(heroFreeCents)}) liegt unter deinem Wunsch-Puffer von ${formatCents(minBufferCents)}.`,
       evidence: { amountCents: heroFreeCents },
       actions: [
         { label: "Puffer erhöhen", kind: "adjust_value" },

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
-// Minimal euro to cents util
 import { format } from 'date-fns';
+import { getCurrencySymbol } from '@/shared/hooks/useCurrency';
 import type { FinancialGoal, GoalPriority } from '@shared/types';
 import { Button, Input, Select, Textarea } from '@shared/components';
 
@@ -18,23 +18,9 @@ const priorityOptions: { value: GoalPriority; label: string }[] = [
 ];
 
 export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
-  if (import.meta.env.DEV && initialData) {
-    // Dev-only: log incoming goal object and relevant fields
-    // eslint-disable-next-line no-console
-    console.log("[GoalForm] initialData (edit mode):", initialData);
-    // eslint-disable-next-line no-console
-    console.log("[GoalForm] initialData.targetAmount:", initialData.targetAmount);
-  }
-
-  // Use targetAmount (EUR) directly
   const initialTargetAmount = initialData?.targetAmount !== undefined
     ? initialData.targetAmount.toString()
     : '';
-
-  if (import.meta.env.DEV && initialData) {
-    // eslint-disable-next-line no-console
-    console.log("[GoalForm] Derived initialTargetAmount for form:", initialTargetAmount);
-  }
 
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -49,38 +35,28 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitHit, setSubmitHit] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name ist erforderlich';
-    }
-    
+    if (!formData.name.trim()) newErrors.name = 'Name ist erforderlich';
     if (!formData.targetAmount || parseFloat(formData.targetAmount) <= 0) {
       newErrors.targetAmount = 'Zielbetrag muss größer als 0 sein';
     }
-    
     if (parseFloat(formData.currentAmount) < 0) {
       newErrors.currentAmount = 'Aktueller Betrag kann nicht negativ sein';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: FormEvent) => {
-    setSubmitHit(true);
-    console.log("GoalForm submit handler HIT");
     e.preventDefault();
     setSubmitError(null);
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      // Parse monthlyContributionEuro to cents
       let monthlyContributionCents: number | undefined = undefined;
       if (formData.monthlyContributionEuro !== undefined && formData.monthlyContributionEuro !== "") {
         const euro = parseFloat(formData.monthlyContributionEuro);
@@ -88,9 +64,8 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           monthlyContributionCents = Math.round(euro * 100);
         }
       }
-      // Use targetAmount (EUR) directly
       const targetAmount = parseFloat(formData.targetAmount) || 0;
-      const payload = {
+      await onSubmit({
         name: formData.name,
         targetAmount,
         currentAmount: parseFloat(formData.currentAmount),
@@ -98,11 +73,8 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         priority: formData.priority,
         description: formData.description || undefined,
         monthlyContributionCents,
-      };
-      console.log("GoalForm calling onSubmit with payload:", payload);
-      await onSubmit(payload);
+      });
     } catch (err) {
-      console.error("Goal create failed:", err);
       setSubmitError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
@@ -113,27 +85,15 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
     ? Math.min(100, (parseFloat(formData.currentAmount) / parseFloat(formData.targetAmount)) * 100)
     : 0;
 
-  const remaining = parseFloat(formData.targetAmount || '0') - parseFloat(formData.currentAmount || '0');
-
-  const getPriorityColor = (priority: GoalPriority) => {
-    const colors: Record<GoalPriority, string> = {
-      low: 'bg-gray-200 text-gray-800',
-      medium: 'bg-blue-200 text-blue-800',
-      high: 'bg-orange-200 text-orange-800',
-      critical: 'bg-red-200 text-red-800',
-    };
-    return colors[priority];
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <Input
         label="Name des Ziels"
         required
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         error={errors.name}
-        placeholder="z.B. Notgroschen, Urlaub, Neues Auto"
+        placeholder="z.B. Notgroschen, Urlaub"
       />
 
       <Textarea
@@ -144,9 +104,9 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         rows={2}
       />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Input
-          label="Zielbetrag (€)"
+          label={`Zielbetrag (${getCurrencySymbol()})`}
           type="number"
           step="0.01"
           required
@@ -155,9 +115,8 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           error={errors.targetAmount}
           placeholder="0.00"
         />
-
         <Input
-          label="Aktueller Stand (€)"
+          label={`Aktuell (${getCurrencySymbol()})`}
           type="number"
           step="0.01"
           required
@@ -166,9 +125,8 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           error={errors.currentAmount}
           placeholder="0.00"
         />
-
         <Input
-          label="Monatliche Sparrate (EUR)"
+          label={`Monatl. Rate (${getCurrencySymbol()})`}
           type="number"
           step="0.01"
           value={formData.monthlyContributionEuro}
@@ -177,35 +135,27 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
         />
       </div>
 
-      {formData.targetAmount && formData.currentAmount && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Fortschritt:</span>
-            <span className="font-semibold">{progress.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+      {formData.targetAmount && parseFloat(formData.targetAmount) > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                progress >= 100 ? 'bg-success-600' : progress >= 75 ? 'bg-primary-600' : 'bg-primary-400'
+                progress >= 100 ? 'bg-green-500' : progress >= 75 ? 'bg-blue-500' : 'bg-blue-400'
               }`}
               style={{ width: `${Math.min(100, progress)}%` }}
             />
           </div>
-          <div className="text-sm text-gray-600">
-            Noch {remaining.toFixed(2)} € bis zum Ziel
-          </div>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">{progress.toFixed(0)}%</span>
         </div>
       )}
 
-      <Input
-        label="Zieldatum"
-        type="date"
-        value={formData.targetDate}
-        onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-        helperText="Optional - Bis wann möchtest du das Ziel erreichen?"
-      />
-
-      <div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Zieldatum"
+          type="date"
+          value={formData.targetDate}
+          onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+        />
         <Select
           label="Priorität"
           required
@@ -213,28 +163,14 @@ export function GoalForm({ initialData, onSubmit, onCancel }: GoalFormProps) {
           onChange={(e) => setFormData({ ...formData, priority: e.target.value as GoalPriority })}
           options={priorityOptions}
         />
-        <div className="mt-2">
-          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(formData.priority)}`}>
-            {priorityOptions.find((p) => p.value === formData.priority)?.label}
-          </span>
-        </div>
       </div>
 
       {submitError && (
-        <p role="alert" className="text-red-600 text-sm mb-2">{submitError}</p>
+        <p role="alert" className="text-red-600 text-sm">{submitError}</p>
       )}
-      {import.meta.env.DEV && (
-        <div className="text-xs text-gray-500 mt-2">
-          <div>Submit triggered: {submitHit ? "yes" : "no"}</div>
-          {Object.keys(errors).length > 0 && (
-            <pre className="text-xs text-red-500">{JSON.stringify(errors, null, 2)}</pre>
-          )}
-        </div>
-      )}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
-          Abbrechen
-        </Button>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>Abbrechen</Button>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? 'Bitte warten...' : (initialData ? 'Aktualisieren' : 'Erstellen')}
         </Button>

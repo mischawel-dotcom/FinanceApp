@@ -10,6 +10,7 @@ import GoalsPage from '@features/goals/GoalsPage';
 import RecommendationsPage from '@features/recommendations/RecommendationsPage';
 import PlanningPage from '@features/planning/PlanningPage';
 import ReportsPage from '@features/reports/ReportsPage';
+import SettingsPage from '@features/settings/SettingsPage';
 
 export default function AppRouter() {
   return (
@@ -24,6 +25,7 @@ export default function AppRouter() {
           <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/planning" element={<PlanningPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </AppShell>
     </BrowserRouter>

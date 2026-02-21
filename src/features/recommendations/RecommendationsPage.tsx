@@ -1,6 +1,6 @@
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button, Card } from '@shared/components';
-import { formatCentsEUR } from '@/ui/formatMoney';
+import { formatCents } from '@/ui/formatMoney';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildDashboardModelFromRepositories } from '@/planning/planFacade';
@@ -69,13 +69,13 @@ export default function RecommendationsPage() {
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'high':
-        return 'bg-danger-100 text-danger-800 border-danger-200';
+        return 'bg-danger-100 text-danger-800 border-danger-200 dark:bg-danger-500/20 dark:text-danger-300 dark:border-danger-500/30';
       case 'medium':
-        return 'bg-primary-100 text-primary-800 border-primary-200';
+        return 'bg-primary-100 text-primary-800 border-primary-200 dark:bg-primary-500/20 dark:text-primary-300 dark:border-primary-500/30';
       case 'low':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-700';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-700';
     }
   };
 
@@ -112,8 +112,8 @@ export default function RecommendationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Empfehlungen</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Empfehlungen</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Budget-Gesundheit und intelligente Spar-Tipps
           </p>
         </div>
@@ -131,23 +131,23 @@ export default function RecommendationsPage() {
          Single Source of Truth for cashflow health
          ══════════════════════════════════════════════════════════ */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
           <span className="text-lg">🏦</span> Budget-Gesundheit
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Basierend auf deiner vollständigen Cashflow-Prognose (Einkommen, Fixkosten, Ziele, Anlagen)
         </p>
 
         {planLoading ? (
           <Card>
-            <div className="text-center py-8 text-gray-500">Berechne Prognose...</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Berechne Prognose...</div>
           </Card>
         ) : budgetHealthRecs.length === 0 ? (
           <Card>
             <div className="text-center py-8">
               <div className="text-4xl mb-3">✅</div>
               <h3 className="text-lg font-semibold text-success-600 mb-1">Budget ist gesund</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Keine Fehlbeträge oder Engpässe in deiner Cashflow-Prognose erkannt.
               </p>
               <Button variant="ghost" size="sm" className="mt-3" onClick={() => navigate('/planning')}>
@@ -160,9 +160,9 @@ export default function RecommendationsPage() {
             {budgetHealthRecs.map((rec) => {
               let explanation: string | null = null;
               if (rec.type === 'shortfall_risk' && rec.evidence?.month && typeof rec.evidence.amountCents === 'number') {
-                explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCentsEUR(rec.evidence.amountCents)}.`;
+                explanation = `Im Monat ${rec.evidence.month} entsteht ein Fehlbetrag von ${formatCents(rec.evidence.amountCents)}.`;
               } else if (rec.type === 'low_slack') {
-                explanation = `Dein freier Spielraum beträgt aktuell nur ${formatCentsEUR(rec.evidence?.amountCents ?? 0)}.`;
+                explanation = `Dein freier Spielraum beträgt aktuell nur ${formatCents(rec.evidence?.amountCents ?? 0)}.`;
               } else if (rec.type === 'goal_contrib_issue') {
                 explanation = `Für dieses Ziel ist ein Beitrag geplant, der nicht gedeckt ist.`;
               }
@@ -172,8 +172,8 @@ export default function RecommendationsPage() {
                   <div
                     className={`p-4 rounded-lg border ${
                       rec.type === 'shortfall_risk'
-                        ? 'border-danger-200 bg-danger-50'
-                        : 'border-primary-200 bg-primary-50'
+                        ? 'border-danger-200 bg-danger-50 dark:border-danger-500/30 dark:bg-danger-500/10'
+                        : 'border-primary-200 bg-primary-50 dark:border-primary-500/30 dark:bg-primary-500/10'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -186,12 +186,12 @@ export default function RecommendationsPage() {
                           }`}>
                             {rec.type === 'shortfall_risk' ? 'Risiko' : 'Hinweis'}
                           </span>
-                          <span className="text-xs text-gray-400">Quelle: Finanzplanung</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Quelle: Finanzplanung</span>
                         </div>
-                        <h3 className="font-semibold text-gray-900">{rec.title}</h3>
-                        <p className="text-sm text-gray-700 mt-1">{rec.reason}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{rec.title}</h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{rec.reason}</p>
                         {explanation && (
-                          <p className="text-sm text-gray-600 mt-2">{explanation}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{explanation}</p>
                         )}
                       </div>
                       <div className="flex-shrink-0 flex flex-col gap-2">
@@ -228,10 +228,10 @@ export default function RecommendationsPage() {
          Pattern-based expense analysis
          ══════════════════════════════════════════════════════════ */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
           <span className="text-lg">📊</span> Ausgaben-Optimierung
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Analysiert deine Ausgabenmuster der letzten 3 Monate nach Kategorien und Wichtigkeit
         </p>
 
@@ -240,16 +240,16 @@ export default function RecommendationsPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-600">Gesamtes Einsparpotenzial</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Gesamtes Einsparpotenzial</div>
                 <div className="text-3xl font-bold text-success-600 mt-1">
-                  {formatCentsEUR(totalSavings)}
+                  {formatCents(totalSavings)}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {filteredRecommendations.length} Empfehlung{filteredRecommendations.length !== 1 ? 'en' : ''}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-600 mb-2">Nach Impact filtern</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Nach Impact filtern</div>
                 <div className="flex gap-2" role="group" aria-label="Impact Filter">
                   <button
                     onClick={() => setImpactFilter('all')}
@@ -258,7 +258,7 @@ export default function RecommendationsPage() {
                     className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                       impactFilter === 'all'
                         ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-300'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-primary-600'
                     }`}
                   >
                     Alle
@@ -270,7 +270,7 @@ export default function RecommendationsPage() {
                     className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                       impactFilter === 'high'
                         ? 'bg-danger-600 text-white border-danger-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-danger-300'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-danger-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-danger-600'
                     }`}
                   >
                     Hoch
@@ -282,7 +282,7 @@ export default function RecommendationsPage() {
                     className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                       impactFilter === 'medium'
                         ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-300'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-primary-600'
                     }`}
                   >
                     Mittel
@@ -294,7 +294,7 @@ export default function RecommendationsPage() {
                     className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                       impactFilter === 'low'
                         ? 'bg-gray-600 text-white border-gray-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
                     }`}
                   >
                     Niedrig
@@ -310,12 +310,12 @@ export default function RecommendationsPage() {
           <Card>
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 {recommendations.length === 0 
                   ? 'Noch keine Empfehlungen' 
                   : 'Keine Empfehlungen für diesen Filter'}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 {recommendations.length === 0
                   ? 'Klicke auf "Neu berechnen", um personalisierte Spar-Tipps zu erhalten.'
                   : 'Versuche einen anderen Filter oder generiere neue Empfehlungen.'}
@@ -331,20 +331,20 @@ export default function RecommendationsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {getTypeLabel(rec.type)}
                         </span>
                         <span className={`px-2 py-1 text-xs font-semibold rounded border ${getImpactColor(rec.impact)}`}>
                           {getImpactLabel(rec.impact)} Impact
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{rec.title}</h3>
-                      <p className="text-gray-700">{rec.description}</p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{rec.title}</h3>
+                      <p className="text-gray-700 dark:text-gray-300">{rec.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-sm text-gray-600">Einsparpotenzial</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Einsparpotenzial</div>
                       <div className="text-2xl font-bold text-success-600">
-                        {formatCentsEUR(rec.potentialSavings)}
+                        {formatCents(rec.potentialSavings)}
                       </div>
                     </div>
                   </div>
@@ -358,15 +358,15 @@ export default function RecommendationsPage() {
                       {expandedId === rec.id ? '▼' : '▶'} Wie wurde das berechnet?
                     </button>
                     {expandedId === rec.id && (
-                      <div className="mt-3 p-4 bg-primary-50 rounded-lg border border-primary-100">
-                        <p className="text-sm text-gray-700 leading-relaxed">{rec.explanation}</p>
+                      <div className="mt-3 p-4 bg-primary-50 dark:bg-primary-500/10 rounded-lg border border-primary-100 dark:border-primary-500/20">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{rec.explanation}</p>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Erstellt: {new Date(rec.createdAt).toLocaleDateString('de-DE')}
                     </div>
                     <Button

@@ -3,7 +3,7 @@ import { useAppStore } from '@/app/store/useAppStore';
 import { Card } from '@shared/components';
 import { format } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
-import { formatCentsEUR } from '@/ui/formatMoney';
+import { formatCents } from '@/ui/formatMoney';
 import { asCentsSafe } from '@shared/utils/money';
 
 const normalizeCents = (amountCents: unknown, amount: unknown) => {
@@ -123,8 +123,8 @@ export default function DashboardPage() {
   return (
       <div className="space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1 text-sm lg:text-base">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm lg:text-base">
           {format(now, 'MMMM yyyy')} - Dein finanzieller Überblick
         </p>
       </div>
@@ -135,25 +135,25 @@ export default function DashboardPage() {
       {/* Main KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
         <Card>
-          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Einnahmen</div>
+          <div className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-0.5">Einnahmen</div>
           <div className="text-lg lg:text-2xl font-bold text-success-600">
-            +{formatCentsEUR(flowKpis?.incomeCents ?? 0)}
+            +{formatCents(flowKpis?.incomeCents ?? 0)}
           </div>
         </Card>
         <Card>
-          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Ausgaben</div>
+          <div className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-0.5">Ausgaben</div>
           <div className="text-lg lg:text-2xl font-bold text-danger-600">
-            -{formatCentsEUR(
+            -{formatCents(
               (flowKpis?.boundCents ?? 0) + (flowKpis?.plannedCents ?? 0) + (flowKpis?.investedCents ?? 0)
             )}
           </div>
         </Card>
         <Card>
-          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Saldo</div>
+          <div className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-0.5">Saldo</div>
           <div className={`text-lg lg:text-2xl font-bold ${(flowKpis?.freeCents ?? 0) >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {(flowKpis?.freeCents ?? 0) >= 0 ? '+' : ''}{formatCentsEUR(flowKpis?.freeCents ?? 0)}
+            {(flowKpis?.freeCents ?? 0) >= 0 ? '+' : ''}{formatCents(flowKpis?.freeCents ?? 0)}
           </div>
-          <div className="text-[10px] lg:text-xs text-gray-500 mt-0.5">
+          <div className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Sparquote: {
               flowKpis && flowKpis.incomeCents > 0
                 ? (((flowKpis.plannedCents + flowKpis.investedCents) / flowKpis.incomeCents) * 100).toFixed(1)
@@ -162,11 +162,11 @@ export default function DashboardPage() {
           </div>
         </Card>
         <Card>
-          <div className="text-xs lg:text-sm text-gray-600 mb-0.5">Vermögen</div>
-          <div className="text-lg lg:text-2xl font-bold text-gray-900">{formatCentsEUR(totalAssetValueCents)}</div>
+          <div className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mb-0.5">Vermögen</div>
+          <div className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">{formatCents(totalAssetValueCents)}</div>
           {assetGainCents !== 0 && (
             <div className={`text-[10px] lg:text-xs mt-0.5 ${assetGainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {assetGainCents >= 0 ? '+' : ''}{formatCentsEUR(assetGainCents)}
+              {assetGainCents >= 0 ? '+' : ''}{formatCents(assetGainCents)}
             </div>
           )}
         </Card>
@@ -177,19 +177,19 @@ export default function DashboardPage() {
         {/* Recent Transactions */}
         <Card title="Letzte Buchungen">
           {recentTransactions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Noch keine Buchungen vorhanden</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Noch keine Buchungen vorhanden</p>
           ) : (
             <div className="space-y-3">
               {recentTransactions.map((txn, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">{txn.title}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium text-gray-900 dark:text-white">{txn.title}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {txn.categoryName} • {format(txn.date, 'dd.MM.yyyy')}
                     </div>
                   </div>
                   <div className={`font-semibold ${txn.type === 'income' ? 'text-success-600' : 'text-danger-600'}`}>
-                    {txn.type === 'income' ? '+' : '-'}{formatCentsEUR(normalizeCents(txn.amountCents, txn.amount))}
+                    {txn.type === 'income' ? '+' : '-'}{formatCents(normalizeCents(txn.amountCents, txn.amount))}
                   </div>
                 </div>
               ))}
@@ -200,7 +200,7 @@ export default function DashboardPage() {
         {/* Expenses by Category */}
         <Card title="Ausgaben nach Kategorie (Monat)">
           {expensesByCategory.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Noch keine Ausgaben diesen Monat</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Noch keine Ausgaben diesen Monat</p>
           ) : (
             <div className="space-y-3">
               {expensesByCategory.slice(0, 5).map((cat, index) => {
@@ -213,11 +213,11 @@ export default function DashboardPage() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: cat.color }}
                         />
-                        <span className="text-sm font-medium text-gray-900">{cat.category}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{cat.category}</span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-900">{formatCentsEUR(cat.total)}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCents(cat.total)}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{ 
@@ -226,7 +226,7 @@ export default function DashboardPage() {
                         }}
                       />
                     </div>
-                    <div className="text-xs text-gray-500">{percentage}% der Ausgaben</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{percentage}% der Ausgaben</div>
                   </div>
                 );
               })}
@@ -249,12 +249,12 @@ export default function DashboardPage() {
                     : 0;
               const percent = targetCents > 0 ? (currentCents / targetCents) * 100 : 0;
               return (
-                <div key={goal.id} className="p-4 bg-gray-50 rounded-lg">
-                  <div className="font-semibold text-gray-900 mb-2">{goal.name}</div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    {formatCentsEUR(currentCents)} / {formatCentsEUR(targetCents)}
+                <div key={goal.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="font-semibold text-gray-900 dark:text-white mb-2">{goal.name}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    {formatCents(currentCents)} / {formatCents(targetCents)}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-1">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden mb-1">
                     <div
                       className={`h-full rounded-full ${
                         percent >= 100 ? 'bg-success-600' : percent >= 75 ? 'bg-primary-600' : 'bg-primary-400'
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                       style={{ width: `${Math.min(100, percent)}%` }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">{percent.toFixed(1)}% erreicht</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{percent.toFixed(1)}% erreicht</div>
                 </div>
               );
             })}
@@ -275,17 +275,17 @@ export default function DashboardPage() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-600">Gesamt-Zielfortschritt</div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">
-                {formatCentsEUR(totalGoalCurrentCents)} / {formatCentsEUR(totalGoalTargetCents)}
+              <div className="text-sm text-gray-600 dark:text-gray-400">Gesamt-Zielfortschritt</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {formatCents(totalGoalCurrentCents)} / {formatCents(totalGoalTargetCents)}
               </div>
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-primary-600">{totalGoalPercent.toFixed(1)}%</div>
-              <div className="text-sm text-gray-500">erreicht</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">erreicht</div>
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mt-4">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden mt-4">
             <div
               className="h-full rounded-full bg-primary-600"
               style={{ width: `${totalGoalPercent}%` }}

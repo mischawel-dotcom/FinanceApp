@@ -47,7 +47,8 @@
     await waitFor(() => {
       const updatedRow = screen.getByTestId("goal-row-g1");
       expect(updatedRow).toBeInTheDocument();
-      expect(within(updatedRow).getByText(/200[,\.]00\s*€/)).toBeInTheDocument();
+      const matches = within(updatedRow).getAllByText(/200[,\.]00\s*€/);
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
   });
 

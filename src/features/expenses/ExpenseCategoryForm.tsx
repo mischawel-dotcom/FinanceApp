@@ -29,20 +29,14 @@ export function ExpenseCategoryForm({ initialData, onSubmit, onCancel }: Expense
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name ist erforderlich';
-    }
-    
+    if (!formData.name.trim()) newErrors.name = 'Name ist erforderlich';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
     if (!validate()) return;
-    
     onSubmit({
       name: formData.name,
       description: formData.description || undefined,
@@ -51,20 +45,8 @@ export function ExpenseCategoryForm({ initialData, onSubmit, onCancel }: Expense
     });
   };
 
-  const getImportanceColor = (level: string) => {
-    const colors: Record<string, string> = {
-      '1': 'bg-gray-200 text-gray-800',
-      '2': 'bg-blue-200 text-blue-800',
-      '3': 'bg-yellow-200 text-yellow-800',
-      '4': 'bg-orange-200 text-orange-800',
-      '5': 'bg-red-200 text-red-800',
-      '6': 'bg-red-600 text-white',
-    };
-    return colors[level] || colors['3'];
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <Input
         label="Name"
         required
@@ -79,47 +61,34 @@ export function ExpenseCategoryForm({ initialData, onSubmit, onCancel }: Expense
         value={formData.description}
         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         placeholder="Optionale Beschreibung"
-        rows={3}
+        rows={2}
       />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Farbe
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            type="color"
-            value={formData.color}
-            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            className="h-10 w-20 rounded border border-gray-300 cursor-pointer"
-          />
-          <span className="text-sm text-gray-600">{formData.color}</span>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farbe</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              className="h-10 w-14 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+            />
+            <div className="flex-1 h-3 rounded-full" style={{ backgroundColor: formData.color }} />
+          </div>
         </div>
-      </div>
-
-      <div>
         <Select
           label="Wichtigkeit"
           required
           value={formData.importance}
           onChange={(e) => setFormData({ ...formData, importance: e.target.value })}
           options={importanceOptions}
-          helperText="Wichtigkeit von 1 (unwichtig) bis 6 (extrem wichtig)"
         />
-        <div className="mt-2">
-          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getImportanceColor(formData.importance)}`}>
-            Wichtigkeit: {formData.importance}
-          </span>
-        </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Abbrechen
-        </Button>
-        <Button type="submit" variant="primary">
-          {initialData ? 'Aktualisieren' : 'Erstellen'}
-        </Button>
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel}>Abbrechen</Button>
+        <Button type="submit" variant="primary">{initialData ? 'Aktualisieren' : 'Erstellen'}</Button>
       </div>
     </form>
   );

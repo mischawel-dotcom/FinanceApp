@@ -5,6 +5,7 @@ import type { Income, IncomeCategory } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
 import { IncomeCategoryForm } from './IncomeCategoryForm';
 import { IncomeForm } from './IncomeForm';
+import { formatCents } from '@/ui/formatMoney';
 
 export default function IncomePage() {
     // incomeColumns: define here so it is available for Table
@@ -14,21 +15,18 @@ export default function IncomePage() {
       {
         key: 'amount',
         label: 'Betrag',
-        render: (inc: Income) => {
-          const euros = inc.amount / 100;
-          return (
-            <span className="font-semibold text-success-600">
-              {euros.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-            </span>
-          );
-        }
+        render: (inc: Income) => (
+          <span className="font-semibold text-success-600">
+            {formatCents(inc.amount)}
+          </span>
+        )
       },
       { key: 'category', label: 'Kategorie', render: (inc: Income) => getCategoryName(inc.categoryId) },
       {
         key: 'recurring',
         label: 'Wiederkehrend',
         render: (inc: Income) => (
-          <span className={`px-2 py-1 text-xs rounded-full ${inc.isRecurring ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+          <span className={`px-2 py-1 text-xs rounded-full ${inc.isRecurring ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'}`}>
             {inc.isRecurring ? 'Ja' : 'Nein'}
           </span>
         )
@@ -149,13 +147,13 @@ export default function IncomePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Einkommen</h1>
-          <p className="text-gray-600 mt-1">Verwaltung von Einnahmen und Kategorien</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Einkommen</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Einnahmen und Kategorien</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8" role="tablist" aria-label="Einnahmen Tabs">
           <button
             onClick={() => setActiveTab('entries')}
@@ -167,7 +165,7 @@ export default function IncomePage() {
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'entries'
                 ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Einnahmen ({incomes.length})
@@ -182,7 +180,7 @@ export default function IncomePage() {
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'categories'
                 ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Kategorien ({incomeCategories.length})
@@ -211,26 +209,26 @@ export default function IncomePage() {
           {/* Mobile: Card List */}
           <div className="lg:hidden">
             {incomes.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">Noch keine Einnahmen vorhanden</div>
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Einnahmen vorhanden</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {incomes.sort((a, b) => b.date.getTime() - a.date.getTime()).map((inc) => (
                   <div key={inc.id} className="py-3 px-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{inc.title}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">{inc.title}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
                           <span>{format(inc.date, 'dd.MM.yyyy')}</span>
                           <span>·</span>
                           <span>{getCategoryName(inc.categoryId)}</span>
                           {inc.isRecurring && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-medium">Wiederkehrend</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-[10px] font-medium">Wiederkehrend</span>
                           )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="font-semibold text-success-600">
-                          {(inc.amount / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                          {formatCents(inc.amount)}
                         </div>
                       </div>
                     </div>
@@ -267,16 +265,16 @@ export default function IncomePage() {
           {/* Mobile: Card List */}
           <div className="lg:hidden">
             {incomeCategories.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">Noch keine Kategorien vorhanden</div>
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Kategorien vorhanden</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {incomeCategories.map((cat) => (
                   <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
                       <div>
-                        <div className="font-medium text-gray-900">{cat.name}</div>
-                        {cat.description && <div className="text-xs text-gray-500 mt-0.5">{cat.description}</div>}
+                        <div className="font-medium text-gray-900 dark:text-white">{cat.name}</div>
+                        {cat.description && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{cat.description}</div>}
                       </div>
                     </div>
                   </div>

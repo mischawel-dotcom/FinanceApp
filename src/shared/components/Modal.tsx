@@ -1,7 +1,5 @@
-
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { modalBase, modalHeader, modalTitle, modalClose, modalBody, modalFooter } from './tw';
 
 interface ModalProps {
   isOpen: boolean;
@@ -21,7 +19,6 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       closeButtonRef.current?.focus();
-      // Focus trap
       const trapFocus = (e: KeyboardEvent) => {
         if (e.key === 'Tab' && modalRef.current) {
           const focusable = modalRef.current.querySelectorAll<HTMLElement>(
@@ -65,52 +62,44 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'sm:max-w-md',
+    md: 'sm:max-w-lg',
+    lg: 'sm:max-w-2xl',
+    xl: 'sm:max-w-4xl',
   };
 
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="hidden sm:block fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="min-h-full sm:flex sm:items-center sm:justify-center sm:p-4">
         <div
           ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={[modalBase, sizes[size]].join(' ')}
+          className={`bg-white dark:bg-gray-800 w-full min-h-screen sm:min-h-0 sm:rounded-lg sm:shadow-xl sm:max-h-[90vh] flex flex-col ${sizes[size]}`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className={modalHeader}>
-            <h2 id={titleId} className={modalTitle}>{title}</h2>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <h2 id={titleId} className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
             <button
               ref={closeButtonRef}
               onClick={onClose}
-              className={modalClose}
-              aria-label="Close"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
+              aria-label="Schließen"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-
-          {/* Body */}
-          <div className={modalBody}>{children}</div>
-
-          {/* Footer */}
+          <div className="px-4 sm:px-6 py-4 overflow-y-auto flex-1">{children}</div>
           {footer && (
-            <div className={modalFooter}>
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 flex-shrink-0">
               {footer}
             </div>
           )}

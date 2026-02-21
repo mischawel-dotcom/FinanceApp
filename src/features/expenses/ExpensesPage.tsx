@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Expense, ExpenseCategory } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
-import { formatCentsEUR } from '@/ui/formatMoney';
+import { formatCents } from '@/ui/formatMoney';
 import { ExpenseCategoryForm } from './ExpenseCategoryForm';
 import { ExpenseForm } from './ExpenseForm';
 // Patch: ExpenseForm now accepts onSubmit: (data: any) => void
@@ -98,11 +98,11 @@ export default function ExpensesPage() {
 
   const getImportanceBadge = (importance: number) => {
     const colors: Record<number, string> = {
-      1: 'bg-gray-200 text-gray-800',
-      2: 'bg-blue-200 text-blue-800',
-      3: 'bg-yellow-200 text-yellow-800',
-      4: 'bg-orange-200 text-orange-800',
-      5: 'bg-red-200 text-red-800',
+      1: 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100',
+      2: 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+      3: 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+      4: 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200',
+      5: 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200',
       6: 'bg-red-600 text-white',
     };
     return colors[importance] || colors[3];
@@ -155,7 +155,7 @@ export default function ExpensesPage() {
       label: 'Betrag',
       render: (exp: Expense) => (
         <span className="font-semibold text-danger-600">
-          {formatCentsEUR(exp.amount)}
+          {formatCents(exp.amount)}
         </span>
       )
     },
@@ -164,7 +164,7 @@ export default function ExpensesPage() {
       key: 'recurring',
       label: 'Wiederkehrend',
       render: (exp: Expense) => (
-        exp.isRecurring ? <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Ja</span> : <span className="px-2 py-1 text-xs text-gray-500">Nein</span>
+        exp.isRecurring ? <span className="px-2 py-1 text-xs rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Ja</span> : <span className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">Nein</span>
       )
     },
     { 
@@ -196,13 +196,13 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ausgaben</h1>
-          <p className="text-gray-600 mt-1">Verwaltung von Ausgaben und Kategorien mit Wichtigkeitsskala</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ausgaben</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Ausgaben und Kategorien mit Wichtigkeitsskala</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8" role="tablist" aria-label="Ausgaben Tabs">
           <button
             onClick={() => setActiveTab('entries')}
@@ -214,7 +214,7 @@ export default function ExpensesPage() {
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'entries'
                 ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Ausgaben ({expenses.length})
@@ -229,7 +229,7 @@ export default function ExpensesPage() {
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'categories'
                 ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             Kategorien ({expenseCategories.length})
@@ -258,15 +258,15 @@ export default function ExpensesPage() {
           {/* Mobile: Card List */}
           <div className="lg:hidden">
             {expenses.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">Noch keine Ausgaben vorhanden</div>
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Ausgaben vorhanden</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {expenses.sort((a, b) => b.date.getTime() - a.date.getTime()).map((exp) => (
                   <div key={exp.id} className="py-3 px-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{exp.title}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">{exp.title}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                           <span>{format(exp.date, 'dd.MM.yyyy')}</span>
                           <span>·</span>
                           <span>{getCategoryName(exp.categoryId)}</span>
@@ -274,13 +274,13 @@ export default function ExpensesPage() {
                             W{exp.importance}
                           </span>
                           {exp.isRecurring && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-medium">Wdh.</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-[10px] font-medium">Wdh.</span>
                           )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="font-semibold text-danger-600">
-                          {formatCentsEUR(exp.amount)}
+                          {formatCents(exp.amount)}
                         </div>
                       </div>
                     </div>
@@ -317,17 +317,17 @@ export default function ExpensesPage() {
           {/* Mobile: Card List */}
           <div className="lg:hidden">
             {expenseCategories.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">Noch keine Kategorien vorhanden</div>
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Kategorien vorhanden</div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {expenseCategories.sort((a, b) => b.importance - a.importance).map((cat) => (
                   <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
                       <div>
-                        <div className="font-medium text-gray-900">{cat.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{cat.name}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {cat.description && <span className="text-xs text-gray-500">{cat.description}</span>}
+                          {cat.description && <span className="text-xs text-gray-500 dark:text-gray-400">{cat.description}</span>}
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
                             W{cat.importance ?? 3}
                           </span>

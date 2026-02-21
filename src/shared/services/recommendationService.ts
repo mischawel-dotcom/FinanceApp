@@ -9,7 +9,7 @@ import type {
   Recommendation
 } from '@shared/types';
 import { subMonths } from 'date-fns';
-import { formatCentsEUR } from '@/ui/formatMoney';
+import { formatCents } from '@/ui/formatMoney';
 
 interface ExpenseAnalysis {
   categoryId: string;
@@ -119,10 +119,10 @@ export class RecommendationService {
         id: this.generateId(),
         type: 'eliminate-expense',
         title: `${analysis.categoryName} stark reduzieren`,
-        description: `Diese Kategorie hat niedrige Wichtigkeit (${analysis.importance}/6), verursacht aber hohe Kosten von ${formatCentsEUR(monthlyCostCents)} pro Monat.`,
+        description: `Diese Kategorie hat niedrige Wichtigkeit (${analysis.importance}/6), verursacht aber hohe Kosten von ${formatCents(monthlyCostCents)} pro Monat.`,
         potentialSavings,
         impact: potentialSavings > 100000 ? 'high' : 'medium',
-        explanation: `Berechnung: Durchschnitt der letzten 3 Monate (${formatCentsEUR(analysis.totalAmount)}) × 80% Reduktionspotenzial = ${formatCentsEUR(potentialSavings)} Ersparnis. Wichtigkeit ${analysis.importance}/6 deutet darauf hin, dass diese Ausgaben verzichtbar sind.`,
+        explanation: `Berechnung: Durchschnitt der letzten 3 Monate (${formatCents(analysis.totalAmount)}) × 80% Reduktionspotenzial = ${formatCents(potentialSavings)} Ersparnis. Wichtigkeit ${analysis.importance}/6 deutet darauf hin, dass diese Ausgaben verzichtbar sind.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -150,10 +150,10 @@ export class RecommendationService {
         id: this.generateId(),
         type: 'reduce-expense',
         title: `${analysis.categoryName} optimieren`,
-        description: `Bei mittlerer Wichtigkeit (${analysis.importance}/6) sind die Kosten von ${formatCentsEUR(monthlyCostCents)}/Monat sehr hoch. Prüfe günstigere Alternativen.`,
+        description: `Bei mittlerer Wichtigkeit (${analysis.importance}/6) sind die Kosten von ${formatCents(monthlyCostCents)}/Monat sehr hoch. Prüfe günstigere Alternativen.`,
         potentialSavings,
         impact: potentialSavings > 80000 ? 'high' : potentialSavings > 30000 ? 'medium' : 'low',
-        explanation: `Berechnung: Aktuelle Kosten ${formatCentsEUR(analysis.totalAmount)} (3 Monate) × 30% Optimierungspotenzial = ${formatCentsEUR(potentialSavings)}. Bei mittlerer Wichtigkeit gibt es oft günstigere Alternativen ohne Qualitätsverlust.`,
+        explanation: `Berechnung: Aktuelle Kosten ${formatCents(analysis.totalAmount)} (3 Monate) × 30% Optimierungspotenzial = ${formatCents(potentialSavings)}. Bei mittlerer Wichtigkeit gibt es oft günstigere Alternativen ohne Qualitätsverlust.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -199,10 +199,10 @@ export class RecommendationService {
         id: this.generateId(),
         type: 'eliminate-expense',
         title: `Teure Einzelausgaben in "${category.name}" vermeiden`,
-        description: `${exps.length} teure Ausgabe(n) (insgesamt ${formatCentsEUR(totalAmountCents)}) in einer Kategorie mit niedriger Wichtigkeit (${maxImportance}/6).`,
+        description: `${exps.length} teure Ausgabe(n) (insgesamt ${formatCents(totalAmountCents)}) in einer Kategorie mit niedriger Wichtigkeit (${maxImportance}/6).`,
         potentialSavings: savingsCents,
         impact: totalAmountCents > 50000 ? 'high' : totalAmountCents > 20000 ? 'medium' : 'low',
-        explanation: `Berechnung: Summe der Einzelausgaben über 150€ = ${formatCentsEUR(totalAmountCents)}. Bei Wichtigkeit ${maxImportance}/6 sind diese Ausgaben vermeidbar. Potenzielle Ersparnis: ${formatCentsEUR(savingsCents)}.`,
+        explanation: `Berechnung: Summe der Einzelausgaben über 150€ = ${formatCents(totalAmountCents)}. Bei Wichtigkeit ${maxImportance}/6 sind diese Ausgaben vermeidbar. Potenzielle Ersparnis: ${formatCents(savingsCents)}.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -235,10 +235,10 @@ export class RecommendationService {
         id: this.generateId(),
         type: 'reduce-expense',
         title: `Häufige Kleinausgaben in "${analysis.categoryName}" reduzieren`,
-        description: `Durchschnittlich ${monthlyCount.toFixed(0)} Ausgaben pro Monat (je ${formatCentsEUR(Math.round(analysis.averageAmount))}) summieren sich zu ${formatCentsEUR(monthlyCostCents)}/Monat.`,
+        description: `Durchschnittlich ${monthlyCount.toFixed(0)} Ausgaben pro Monat (je ${formatCents(Math.round(analysis.averageAmount))}) summieren sich zu ${formatCents(monthlyCostCents)}/Monat.`,
         potentialSavings,
         impact: potentialSavings > 50000 ? 'medium' : 'low',
-        explanation: `Berechnung: ${analysis.expenseCount} Ausgaben × ${formatCentsEUR(Math.round(analysis.averageAmount))} = ${formatCentsEUR(analysis.totalAmount)} (3 Monate). Bei bewussterem Konsum sind 50% Einsparung realistisch = ${formatCentsEUR(potentialSavings)}.`,
+        explanation: `Berechnung: ${analysis.expenseCount} Ausgaben × ${formatCents(Math.round(analysis.averageAmount))} = ${formatCents(analysis.totalAmount)} (3 Monate). Bei bewussterem Konsum sind 50% Einsparung realistisch = ${formatCents(potentialSavings)}.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -266,10 +266,10 @@ export class RecommendationService {
         id: this.generateId(),
         type: 'reduce-expense',
         title: `${analysis.categoryName}: Hohe Kosten trotz hoher Wichtigkeit`,
-        description: `"${analysis.categoryName}" ist dir wichtig (${analysis.importance}/6), kostet aber ${formatCentsEUR(monthlyCostCents)}/Monat. Auch bei wichtigen Ausgaben lohnt ein Vergleich.`,
+        description: `"${analysis.categoryName}" ist dir wichtig (${analysis.importance}/6), kostet aber ${formatCents(monthlyCostCents)}/Monat. Auch bei wichtigen Ausgaben lohnt ein Vergleich.`,
         potentialSavings,
         impact: potentialSavings > 50000 ? 'medium' : 'low',
-        explanation: `Berechnung: Kosten ${formatCentsEUR(analysis.totalAmount)} (letzte 3 Monate) × 10% Optimierungspotenzial = ${formatCentsEUR(potentialSavings)}. Auch bei hoher Wichtigkeit (${analysis.importance}/6) gibt es oft günstigere Tarife, Anbieter oder Verhandlungsspielraum.`,
+        explanation: `Berechnung: Kosten ${formatCents(analysis.totalAmount)} (letzte 3 Monate) × 10% Optimierungspotenzial = ${formatCents(potentialSavings)}. Auch bei hoher Wichtigkeit (${analysis.importance}/6) gibt es oft günstigere Tarife, Anbieter oder Verhandlungsspielraum.`,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCentsEUR } from "../../ui/formatMoney";
+import { formatCents } from "../../ui/formatMoney";
 
 // Minimal dashboard selector logic for test
 function getDashboardGoalTotals(goals: Array<{ targetAmountCents: number, currentAmountCents: number }>) {
@@ -28,8 +28,8 @@ describe("Dashboard goals cents-only contract", () => {
     const { totalTargetCents, totalCurrentCents, pct } = getDashboardGoalTotals(goals);
     expect(totalTargetCents).toBe(200000);
     expect(totalCurrentCents).toBe(50000);
-    expect(formatCentsEUR(totalTargetCents)).toBe("2.000,00 €");
-    expect(formatCentsEUR(totalCurrentCents)).toBe("500,00 €");
+    expect(formatCents(totalTargetCents)).toBe("2.000,00 €");
+    expect(formatCents(totalCurrentCents)).toBe("500,00 €");
     expect(Number.isNaN(pct)).toBe(false);
     expect(pct).toBe(25);
   });

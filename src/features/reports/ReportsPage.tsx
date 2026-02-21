@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Card, Button, Table, Select } from '@shared/components';
-import { formatCentsEUR } from '@/ui/formatMoney';
+import { formatCents } from '@/ui/formatMoney';
 import {
   ResponsiveContainer,
   BarChart,
@@ -191,8 +191,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-600 mt-1">Auswertungen, Trends und Export-Funktionen.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Auswertungen, Trends und Export-Funktionen.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={handleExportMonthlyReport}>
@@ -207,8 +207,8 @@ export default function ReportsPage() {
       <Card>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <div className="text-sm text-gray-600">Monat auswählen</div>
-            <div className="text-xs text-gray-500">Für Kategorie- und Transaktionsauswertung</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Monat auswählen</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Für Kategorie- und Transaktionsauswertung</div>
           </div>
           <div className="w-60">
             <Select
@@ -222,17 +222,17 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <div className="text-sm text-gray-600">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600 mt-1">+{formatCentsEUR(selectedMonthTotals.income)}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Einnahmen (Monat)</div>
+          <div className="text-2xl font-bold text-success-600 mt-1">+{formatCents(selectedMonthTotals.income)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600 mt-1">-{formatCentsEUR(selectedMonthTotals.expense)}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Ausgaben (Monat)</div>
+          <div className="text-2xl font-bold text-danger-600 mt-1">-{formatCents(selectedMonthTotals.expense)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600">Saldo (Monat)</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Saldo (Monat)</div>
           <div className={`text-2xl font-bold mt-1 ${selectedMonthTotals.balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {selectedMonthTotals.balance >= 0 ? '+' : ''}{formatCentsEUR(selectedMonthTotals.balance)}
+            {selectedMonthTotals.balance >= 0 ? '+' : ''}{formatCents(selectedMonthTotals.balance)}
           </div>
         </Card>
       </div>
@@ -244,7 +244,7 @@ export default function ReportsPage() {
               <BarChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
                 <YAxis fontSize={12} />
-                <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
+                <Tooltip formatter={(value: number) => formatCents(value)} />
                 <Legend />
                 <Bar dataKey="income" name="Einnahmen" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expense" name="Ausgaben" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -259,7 +259,7 @@ export default function ReportsPage() {
               <LineChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
                 <YAxis fontSize={12} />
-                <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
+                <Tooltip formatter={(value: number) => formatCents(value)} />
                 <Line type="monotone" dataKey="balance" name="Saldo" stroke="#3b82f6" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
@@ -270,7 +270,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title={`Ausgaben nach Kategorie (${selectedMonth?.label})`}>
           {expenseByCategory.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">Keine Ausgaben im gewählten Monat</div>
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">Keine Ausgaben im gewählten Monat</div>
           ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
@@ -289,7 +289,7 @@ export default function ReportsPage() {
                       <Cell key={entry.id} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatCentsEUR(value)} />
+                  <Tooltip formatter={(value: number) => formatCents(value)} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -318,7 +318,7 @@ export default function ReportsPage() {
               {
                 key: 'total',
                 label: 'Betrag',
-                render: (row) => formatCentsEUR(row.total),
+                render: (row) => formatCents(row.total),
               },
             ]}
           />
@@ -342,7 +342,7 @@ export default function ReportsPage() {
               label: 'Betrag',
               render: (row) => (
                 <span className={row.type === 'income' ? 'text-success-600' : 'text-danger-600'}>
-                  {row.type === 'income' ? '+' : '-'}{formatCentsEUR(row.amount)}
+                  {row.type === 'income' ? '+' : '-'}{formatCents(row.amount)}
                 </span>
               ),
             },
