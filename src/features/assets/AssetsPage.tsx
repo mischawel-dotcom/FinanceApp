@@ -184,7 +184,7 @@ export default function AssetsPage() {
         </Card>
       </div>
 
-      {/* Assets Table */}
+      {/* Assets */}
       <Card
         title={`Vermögenswerte (${assets.length})`}
         actions={
@@ -193,15 +193,81 @@ export default function AssetsPage() {
           </Button>
         }
       >
-        <Table
-          data={assets.slice().sort((a, b) => {
-            const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
-            const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
-            return vb - va;
-          })}
-          columns={columns}
-          emptyMessage="Noch keine Anlagen vorhanden"
-        />
+        {/* Desktop: Table */}
+        <div className="hidden lg:block">
+          <Table
+            data={assets.slice().sort((a, b) => {
+              const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
+              const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
+              return vb - va;
+            })}
+            columns={columns}
+            emptyMessage="Noch keine Anlagen vorhanden"
+          />
+        </div>
+        {/* Mobile: Card List */}
+        <div className="lg:hidden">
+          {assets.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">Noch keine Anlagen vorhanden</div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {assets.slice().sort((a, b) => {
+                const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
+                const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
+                return vb - va;
+              }).map((asset) => {
+                const costBasis = asCentsSafe(asset.costBasisCents);
+                const marketValue = (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents))
+                  ? asCentsSafe(asset.marketValueCents) : undefined;
+                const gainCents = typeof marketValue === 'number' ? marketValue - costBasis : 0;
+                const gainPct = typeof marketValue === 'number' && costBasis > 0
+                  ? ((gainCents / costBasis) * 100).toFixed(1) : null;
+                const displayValue = typeof marketValue === 'number' ? marketValue : costBasis;
+
+                return (
+                  <div key={asset.id} className="py-3 px-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{asset.name}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                          <span>{getAssetTypeLabel(asset.type)}</span>
+                          {asset.purchaseDate && (
+                            <>
+                              <span>·</span>
+                              <span>{format(asset.purchaseDate, 'dd.MM.yyyy')}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-semibold text-gray-900">
+                          {(displayValue / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                        </div>
+                        {gainPct !== null && (
+                          <div className={`text-xs font-medium ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                            {gainCents >= 0 ? '+' : ''}{(gainCents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} € ({gainCents >= 0 ? '+' : ''}{gainPct}%)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex gap-3 text-xs text-gray-500">
+                        <span>Basis: {(costBasis / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>
+                        {asCentsSafe(asset.monthlyContributionCents) > 0 && (
+                          <span>Sparrate: {(asCentsSafe(asset.monthlyContributionCents) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €/M</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => openEditModal(asset)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
+                        <button onClick={() => handleDelete(asset.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Modal */}

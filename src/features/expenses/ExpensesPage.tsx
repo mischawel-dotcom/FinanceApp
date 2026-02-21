@@ -247,11 +247,52 @@ export default function ExpensesPage() {
             </Button>
           }
         >
-          <Table
-            data={expenses.sort((a, b) => b.date.getTime() - a.date.getTime())}
-            columns={expenseColumns}
-            emptyMessage="Noch keine Ausgaben vorhanden"
-          />
+          {/* Desktop: Table */}
+          <div className="hidden lg:block">
+            <Table
+              data={expenses.sort((a, b) => b.date.getTime() - a.date.getTime())}
+              columns={expenseColumns}
+              emptyMessage="Noch keine Ausgaben vorhanden"
+            />
+          </div>
+          {/* Mobile: Card List */}
+          <div className="lg:hidden">
+            {expenses.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">Noch keine Ausgaben vorhanden</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {expenses.sort((a, b) => b.date.getTime() - a.date.getTime()).map((exp) => (
+                  <div key={exp.id} className="py-3 px-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{exp.title}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                          <span>{format(exp.date, 'dd.MM.yyyy')}</span>
+                          <span>·</span>
+                          <span>{getCategoryName(exp.categoryId)}</span>
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(exp.importance)}`}>
+                            W{exp.importance}
+                          </span>
+                          {exp.isRecurring && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-medium">Wdh.</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-semibold text-danger-600">
+                          {formatCentsEUR(exp.amount)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={() => openEditExpenseModal(exp)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
+                      <button onClick={() => handleDeleteExpense(exp.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
       )}
 
@@ -265,11 +306,43 @@ export default function ExpensesPage() {
             </Button>
           }
         >
-          <Table
-            data={expenseCategories.sort((a, b) => b.importance - a.importance)}
-            columns={categoryColumns}
-            emptyMessage="Noch keine Kategorien vorhanden"
-          />
+          {/* Desktop: Table */}
+          <div className="hidden lg:block">
+            <Table
+              data={expenseCategories.sort((a, b) => b.importance - a.importance)}
+              columns={categoryColumns}
+              emptyMessage="Noch keine Kategorien vorhanden"
+            />
+          </div>
+          {/* Mobile: Card List */}
+          <div className="lg:hidden">
+            {expenseCategories.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">Noch keine Kategorien vorhanden</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {expenseCategories.sort((a, b) => b.importance - a.importance).map((cat) => (
+                  <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
+                      <div>
+                        <div className="font-medium text-gray-900">{cat.name}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {cat.description && <span className="text-xs text-gray-500">{cat.description}</span>}
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
+                            W{cat.importance ?? 3}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button onClick={() => openEditCategoryModal(cat)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
+                      <button onClick={handleDeleteCategory} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
       )}
 

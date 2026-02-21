@@ -200,11 +200,49 @@ export default function IncomePage() {
             </Button>
           }
         >
-          <Table
-            data={incomes.sort((a, b) => b.date.getTime() - a.date.getTime())}
-            columns={incomeColumns}
-            emptyMessage="Noch keine Einnahmen vorhanden"
-          />
+          {/* Desktop: Table */}
+          <div className="hidden lg:block">
+            <Table
+              data={incomes.sort((a, b) => b.date.getTime() - a.date.getTime())}
+              columns={incomeColumns}
+              emptyMessage="Noch keine Einnahmen vorhanden"
+            />
+          </div>
+          {/* Mobile: Card List */}
+          <div className="lg:hidden">
+            {incomes.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">Noch keine Einnahmen vorhanden</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {incomes.sort((a, b) => b.date.getTime() - a.date.getTime()).map((inc) => (
+                  <div key={inc.id} className="py-3 px-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{inc.title}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                          <span>{format(inc.date, 'dd.MM.yyyy')}</span>
+                          <span>·</span>
+                          <span>{getCategoryName(inc.categoryId)}</span>
+                          {inc.isRecurring && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-medium">Wiederkehrend</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-semibold text-success-600">
+                          {(inc.amount / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={() => openEditIncomeModal(inc)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
+                      <button onClick={() => handleDeleteIncome(inc.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
       )}
 
@@ -218,11 +256,34 @@ export default function IncomePage() {
             </Button>
           }
         >
-          <Table
-            data={incomeCategories}
-            columns={categoryColumns}
-            emptyMessage="Noch keine Kategorien vorhanden"
-          />
+          {/* Desktop: Table */}
+          <div className="hidden lg:block">
+            <Table
+              data={incomeCategories}
+              columns={categoryColumns}
+              emptyMessage="Noch keine Kategorien vorhanden"
+            />
+          </div>
+          {/* Mobile: Card List */}
+          <div className="lg:hidden">
+            {incomeCategories.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">Noch keine Kategorien vorhanden</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {incomeCategories.map((cat) => (
+                  <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
+                      <div>
+                        <div className="font-medium text-gray-900">{cat.name}</div>
+                        {cat.description && <div className="text-xs text-gray-500 mt-0.5">{cat.description}</div>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
       )}
 

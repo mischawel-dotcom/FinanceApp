@@ -14,8 +14,8 @@ it('edits asset and updates UI immediately', async () => {
 			<AssetsPage />
 		</MemoryRouter>
 	);
-	// Find the row for 'Test Asset 1'
-	const assetRow = screen.getByText('Test Asset 1').closest('tr');
+	// Find the table row for 'Test Asset 1' (getAllByText because mobile cards also render in JSDOM)
+	const assetRow = screen.getAllByText('Test Asset 1').map(el => el.closest('tr')).find(Boolean);
 	expect(assetRow).toBeTruthy();
 	// Find the Bearbeiten button within that row
 	const editButton = within(assetRow!).getByRole('button', { name: 'Bearbeiten' });
@@ -34,18 +34,14 @@ it('edits asset and updates UI immediately', async () => {
 			currentValueInput = numbers[0] ?? inputs[inputs.length - 1];
 		}
 	}
-	// Ensure we are not editing the name field
-	expect(screen.getByText('Test Asset 1')).toBeInTheDocument();
 	fireEvent.change(currentValueInput, { target: { value: '1234' } });
 	// Submit form
 	const saveButton = within(dialog).getByRole('button', { name: /aktualisieren|speichern/i });
 	fireEvent.click(saveButton);
 	// Wait for UI update
 	await waitFor(() => {
-		// Name should remain
-		expect(screen.getByText('Test Asset 1')).toBeInTheDocument();
-		// Value cell should update
-		const updatedRow = screen.getByText('Test Asset 1').closest('tr');
+		expect(screen.getAllByText('Test Asset 1').length).toBeGreaterThan(0);
+		const updatedRow = screen.getAllByText('Test Asset 1').map(el => el.closest('tr')).find(Boolean);
 		expect(updatedRow).toBeTruthy();
 		expect(within(updatedRow!).getByText(/1234(\.00)?\s*€/)).toBeInTheDocument();
 	});
@@ -93,8 +89,8 @@ it('deletes asset and updates UI immediately', async () => {
 			<AssetsPage />
 		</MemoryRouter>
 	);
-	// Find the row for 'Test Asset 1'
-	const row = screen.getByText('Test Asset 1').closest('tr');
+	// Find the table row for 'Test Asset 1' (getAllByText because mobile cards also render in JSDOM)
+	const row = screen.getAllByText('Test Asset 1').map(el => el.closest('tr')).find(Boolean);
 	expect(row).toBeTruthy();
 	// Find the Löschen button within that row
 	const deleteButton = within(row!).getByRole('button', { name: /löschen/i });
@@ -102,7 +98,7 @@ it('deletes asset and updates UI immediately', async () => {
 	// Wait for UI update
 	await waitFor(() => {
 		expect(screen.queryByText('Test Asset 1')).not.toBeInTheDocument();
-		expect(screen.getByText('Test Asset 2')).toBeInTheDocument();
+		expect(screen.getAllByText('Test Asset 2').length).toBeGreaterThan(0);
 	});
 	confirmMock.mockRestore();
 });
