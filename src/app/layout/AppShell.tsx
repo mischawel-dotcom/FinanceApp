@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { path: '/expenses', label: 'Ausgaben', icon: '💸' },
   { path: '/assets', label: 'Anlagen', icon: '📈' },
   { path: '/goals', label: 'Ziele', icon: '🎯' },
+  { path: '/planning', label: 'Planung', icon: '📋' },
   { path: '/recommendations', label: 'Empfehlungen', icon: '💡' },
   { path: '/reports', label: 'Reports', icon: '📄' },
 ];

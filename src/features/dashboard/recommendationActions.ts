@@ -64,7 +64,7 @@ export function handleRecommendationAction(
           return;
         }
         if (action.intent === "planning") {
-          deps.navigate("/");
+          deps.navigate("/planning");
           return;
         }
         if (action.kind === "navigate" && action.payload?.path) {

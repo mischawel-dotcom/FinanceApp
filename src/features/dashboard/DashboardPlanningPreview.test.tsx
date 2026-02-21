@@ -35,7 +35,7 @@ test("renders correct 'Verplant' value for goal monthlyContributionCents", async
     )
   ).toBeInTheDocument();
 });
-test("clicking action button for planning intent navigates to /", async () => {
+test("clicking action button for planning intent navigates to /planning", async () => {
   const mod = await import("@/planning/recommendations");
   (mod.selectDashboardRecommendations as any).mockImplementation(() => [
     {
@@ -56,7 +56,7 @@ test("clicking action button for planning intent navigates to /", async () => {
   );
   const btn = await screen.findByRole("button", { name: /Ansehen/i });
   fireEvent.click(btn);
-  expect(mockNavigate).toHaveBeenCalledWith("/");
+  expect(mockNavigate).toHaveBeenCalledWith("/planning");
 });
 test("renders and handles action button for low_income recommendation", async () => {
   const mod = await import("@/planning/recommendations");

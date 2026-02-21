@@ -293,7 +293,7 @@ export class RecommendationService {
     const recommendations: Recommendation[] = [];
 
     const highImportanceExpensive = analyses.filter(
-      (a) => a.importance >= 5 && a.totalAmount > 300000 // >1000€/Monat über 3 Monate (in Cents)
+      (a) => a.importance >= 5 && a.totalAmount >= 300000 // ≥1000€/Monat über 3 Monate (in Cents)
     );
 
     highImportanceExpensive.forEach((analysis) => {
