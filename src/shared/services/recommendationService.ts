@@ -6,7 +6,6 @@
 import type { 
   Expense, 
   ExpenseCategory, 
-  Income,
   Recommendation
 } from '@shared/types';
 import { subMonths } from 'date-fns';
@@ -25,19 +24,19 @@ export class RecommendationService {
   /**
    * Generiert Empfehlungen basierend auf Ausgaben der letzten 3 Monate
    */
+  /**
+   * Expense Pattern Analyzer: Generiert Empfehlungen basierend auf Ausgaben-Mustern.
+   * Budget-Gesundheit (Free < 0) wird NICHT hier berechnet – das ist Aufgabe
+   * des Planning/Forecast-Systems (Single Source of Truth).
+   */
   generateRecommendations(
     expenses: Expense[],
-    categories: ExpenseCategory[],
-    incomes: Income[] = []
+    categories: ExpenseCategory[]
   ): Recommendation[] {
     const recommendations: Recommendation[] = [];
     const threeMonthsAgo = subMonths(new Date(), 3);
 
     const recentExpenses = expenses.filter((exp) => exp.date >= threeMonthsAgo);
-    const recentIncomes = incomes.filter((inc) => inc.date >= threeMonthsAgo);
-
-    // Regel 5: Budget-Defizit (Ausgaben > Einnahmen) – prüft auch ohne Ausgaben
-    recommendations.push(...this.findBudgetDeficit(recentExpenses, recentIncomes));
 
     if (recentExpenses.length === 0) {
       return recommendations;
@@ -57,7 +56,7 @@ export class RecommendationService {
     // Regel 4: Viele kleine Ausgaben summieren sich
     recommendations.push(...this.findFrequentSmallExpenses(expensesByCategory));
 
-    // Regel 6: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten – Optimierungshinweis
+    // Regel 5: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten – Optimierungshinweis
     recommendations.push(...this.findHighImportanceHighCost(expensesByCategory));
 
     return recommendations;
@@ -249,44 +248,7 @@ export class RecommendationService {
   }
 
   /**
-   * Regel 5: Budget-Defizit – monatliche Ausgaben übersteigen Einnahmen
-   */
-  private findBudgetDeficit(
-    recentExpenses: Expense[],
-    recentIncomes: Income[]
-  ): Recommendation[] {
-    const recommendations: Recommendation[] = [];
-    const totalExpenseCents = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalIncomeCents = recentIncomes.reduce((sum, i) => sum + i.amount, 0);
-
-    if (totalExpenseCents <= totalIncomeCents || totalIncomeCents === 0) {
-      return recommendations;
-    }
-
-    const deficitCents = totalExpenseCents - totalIncomeCents;
-    const months = Math.max(1, new Set(recentExpenses.map((e) => {
-      const d = e.date instanceof Date ? e.date : new Date(e.date);
-      return `${d.getFullYear()}-${d.getMonth()}`;
-    })).size);
-    const monthlyDeficitCents = Math.round(deficitCents / months);
-
-    recommendations.push({
-      id: this.generateId(),
-      type: 'general',
-      title: 'Budget-Defizit: Ausgaben übersteigen Einnahmen',
-      description: `Deine Ausgaben (${formatCentsEUR(totalExpenseCents)}) liegen über deinen Einnahmen (${formatCentsEUR(totalIncomeCents)}). Monatliche Lücke: ca. ${formatCentsEUR(monthlyDeficitCents)}.`,
-      potentialSavings: deficitCents,
-      impact: monthlyDeficitCents > 50000 ? 'high' : monthlyDeficitCents > 20000 ? 'medium' : 'low',
-      explanation: `Berechnung: Gesamtausgaben ${formatCentsEUR(totalExpenseCents)} − Gesamteinnahmen ${formatCentsEUR(totalIncomeCents)} = ${formatCentsEUR(deficitCents)} Defizit über ${months} Monat(e). Prüfe, ob Ausgaben reduziert oder Einnahmen erhöht werden können.`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    return recommendations;
-  }
-
-  /**
-   * Regel 6: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten (>1000€/Monat)
+   * Regel 5: Hohe Wichtigkeit (5-6) mit sehr hohen Kosten (>1000€/Monat)
    * → Auch wichtige Ausgaben können optimiert werden (10-15% Potenzial)
    */
   private findHighImportanceHighCost(analyses: ExpenseAnalysis[]): Recommendation[] {

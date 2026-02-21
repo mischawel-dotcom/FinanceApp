@@ -363,8 +363,8 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({ goals: (state.goals ?? []).filter((g: any) => g.id !== id) }));
       },
       generateRecommendations: async () => {
-        const { expenses, expenseCategories, incomes } = get();
-        const newRecs = recommendationService.generateRecommendations(expenses, expenseCategories, incomes);
+        const { expenses, expenseCategories } = get();
+        const newRecs = recommendationService.generateRecommendations(expenses, expenseCategories);
         set({ recommendations: newRecs });
       },
       deleteRecommendation: async (id: string) => {
