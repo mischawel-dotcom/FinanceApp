@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2563eb"/>
+  <g transform="translate(256,256)">
+    <!-- Coin/Euro symbol -->
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#ffffff" stroke-width="24"/>
+    <text x="0" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="180" font-weight="700" fill="#ffffff">¬</text>
+    <!-- Growth arrow -->
+    <polyline points="80,-120 130,-170 180,-120" fill="none" stroke="#34d399" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="130" y1="-170" x2="130" y2="-90" stroke="#34d399" stroke-width="20" stroke-linecap="round"/>
+  </g>
+</svg>

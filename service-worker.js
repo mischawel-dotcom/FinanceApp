@@ -1,36 +1,31 @@
-// public/service-worker.js
-// Basis-Service-Worker für Offline-First-Strategie
-
-const CACHE_NAME = 'finance-app-cache-v1';
+const CACHE_NAME = 'finance-app-cache-v2';
+const BASE = '/FinanceApp/';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  // Weitere statische Assets (CSS, JS, Icons) können hier ergänzt werden
+  BASE,
+  BASE + 'index.html',
+  BASE + 'manifest.webmanifest',
+  BASE + 'icon.svg',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
-      );
-    })
+    caches.keys().then((names) =>
+      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
+    )
   );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });

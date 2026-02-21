@@ -1,0 +1,21 @@
+{
+  "name": "Finance App",
+  "short_name": "Finance",
+  "description": "Moderne Finanz-App für Privatpersonen – Budget, Planung und Empfehlungen",
+  "start_url": "/FinanceApp/",
+  "scope": "/FinanceApp/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#2563eb",
+  "lang": "de",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
