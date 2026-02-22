@@ -354,7 +354,7 @@ describe('Store Persistierungs-Roundtrip', () => {
     vi.useRealTimers();
   });
 
-  it('KFZ-Szenario: Im Januar 2027 wird auf Dez 2027 weitergeschaltet', async () => {
+  it('KFZ-Szenario: Im Januar 2027 wird auf Dez 2027 weitergeschaltet, fixe Sparrate', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2027-01-15'));
 
@@ -373,16 +373,16 @@ describe('Store Persistierungs-Roundtrip', () => {
     const newDue = new Date(reserve.dueDate!);
 
     expect(newDue.getFullYear()).toBe(2027);
-    expect(newDue.getMonth()).toBe(11); // Dezember
+    expect(newDue.getMonth()).toBe(11);
     expect(newDue.getDate()).toBe(30);
     expect(reserve.currentAmountCents).toBe(0);
-    // Jan → Dez = 11 Monate, neue Sparrate = ceil(158200 / 11) = 14382
-    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 11));
+    // Fixe Sparrate: 158200 / 12 = 13184 (gerundet auf)
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 12));
 
     vi.useRealTimers();
   });
 
-  it('KFZ-Szenario: Im Januar 2028 (zweites Jahr) erneuter Reset auf Dez 2028', async () => {
+  it('KFZ-Szenario: Im Januar 2028 (zweites Jahr) gleiche fixe Sparrate', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2028-01-10'));
 
@@ -390,7 +390,7 @@ describe('Store Persistierungs-Roundtrip', () => {
       name: 'KFZ Versicherung',
       targetAmountCents: 158200,
       currentAmountCents: 158200,
-      monthlyContributionCents: 14382,
+      monthlyContributionCents: Math.ceil(158200 / 12),
       interval: 'yearly',
       dueDate: new Date('2027-12-30'),
     });
@@ -404,13 +404,13 @@ describe('Store Persistierungs-Roundtrip', () => {
     expect(newDue.getMonth()).toBe(11);
     expect(newDue.getDate()).toBe(30);
     expect(reserve.currentAmountCents).toBe(0);
-    // Jan → Dez = 11 Monate
-    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 11));
+    // Gleiche fixe Rate jedes Jahr
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 12));
 
     vi.useRealTimers();
   });
 
-  it('Quartals-Szenario: April-Fälligkeit wird im Mai auf Juli weitergeschaltet', async () => {
+  it('Quartals-Szenario: April-Fälligkeit wird im Mai auf Juli weitergeschaltet, fixe Rate', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2027-05-01'));
 
@@ -432,8 +432,64 @@ describe('Store Persistierungs-Roundtrip', () => {
     expect(newDue.getMonth()).toBe(6); // Juli
     expect(newDue.getDate()).toBe(15);
     expect(reserve.currentAmountCents).toBe(0);
-    // Mai → Juli = 2 Monate
-    expect(reserve.monthlyContributionCents).toBe(Math.ceil(5520 / 2));
+    // Fixe Sparrate: 5520 / 3 = 1840
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(5520 / 3));
+
+    vi.useRealTimers();
+  });
+
+  it('Schweizer Steuern: 3 jährliche Rücklagen haben konstante Gesamtbelastung', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2027-07-01'));
+
+    const rateCents = 300000; // 3000 CHF pro Rate
+
+    await useAppStore.getState().createReserve({
+      name: 'Steuern Juni',
+      targetAmountCents: rateCents,
+      currentAmountCents: rateCents,
+      monthlyContributionCents: 50000,
+      interval: 'yearly',
+      dueDate: new Date('2027-06-26'),
+    });
+    await useAppStore.getState().createReserve({
+      name: 'Steuern Oktober',
+      targetAmountCents: rateCents,
+      currentAmountCents: 0,
+      monthlyContributionCents: 25000,
+      interval: 'yearly',
+      dueDate: new Date('2027-10-26'),
+    });
+    await useAppStore.getState().createReserve({
+      name: 'Steuern Dezember',
+      targetAmountCents: rateCents,
+      currentAmountCents: 0,
+      monthlyContributionCents: 25000,
+      interval: 'yearly',
+      dueDate: new Date('2027-12-26'),
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserves = useAppStore.getState().reserves;
+    const fixedMonthly = Math.ceil(rateCents / 12);
+
+    // Juni-Reserve wurde zurückgesetzt (war fällig), die anderen nicht
+    const juniReserve = reserves.find(r => r.name === 'Steuern Juni')!;
+    const oktReserve = reserves.find(r => r.name === 'Steuern Oktober')!;
+    const dezReserve = reserves.find(r => r.name === 'Steuern Dezember')!;
+
+    expect(juniReserve.currentAmountCents).toBe(0);
+    expect(juniReserve.monthlyContributionCents).toBe(fixedMonthly);
+    expect(new Date(juniReserve.dueDate!).getFullYear()).toBe(2028);
+
+    // Oktober und Dezember sind noch nicht fällig → unverändert
+    expect(oktReserve.monthlyContributionCents).toBe(25000);
+    expect(dezReserve.monthlyContributionCents).toBe(25000);
+
+    // Nach Stabilisierung: alle 3 haben die gleiche fixe Rate
+    // → Gesamtbelastung = 3 × ceil(300000/12) = 3 × 25000 = 75000 Cents = 750 CHF/Monat
+    expect(fixedMonthly).toBe(25000);
 
     vi.useRealTimers();
   });

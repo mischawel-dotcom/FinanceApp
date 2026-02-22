@@ -151,6 +151,7 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
               onChange={e => setFormData({ ...formData, recurrenceInterval: e.target.value as RecurrenceInterval })}
               options={[
                 { value: 'monthly', label: 'Monatlich' },
+                { value: 'quarterly', label: 'Vierteljährlich' },
                 { value: 'yearly', label: 'Jährlich' },
               ]}
             />

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button, Card, Modal } from '@shared/components';
 import { ReserveForm } from './ReserveForm';
@@ -11,10 +12,13 @@ export default function ReservesPage() {
   const createReserve = useAppStore((s) => s.createReserve);
   const updateReserve = useAppStore((s) => s.updateReserve);
   const deleteReserve = useAppStore((s) => s.deleteReserve);
+  const linkExpenseToReserve = useAppStore((s) => s.linkExpenseToReserve);
+  const unlinkReserveFromExpense = useAppStore((s) => s.unlinkReserveFromExpense);
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingReserve, setEditingReserve] = useState<Reserve | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Reserve | null>(null);
+  const [linkingReserve, setLinkingReserve] = useState<Reserve | null>(null);
 
   const sortedReserves = useMemo(() =>
     [...reserves].sort((a, b) => {
@@ -50,6 +54,26 @@ export default function ReservesPage() {
     if (!linkedExpenseId) return null;
     const expense = expenses.find((e: any) => e.id === linkedExpenseId);
     return expense ? (expense as any).title : null;
+  };
+
+  const linkableExpenses = useMemo(() =>
+    expenses.filter((e: any) => {
+      if ((e as any).linkedReserveId || (e as any).linkedGoalId) return false;
+      if (e.isRecurring && e.recurrenceInterval && e.recurrenceInterval !== 'monthly') return true;
+      if (!e.isRecurring && e.date && new Date(e.date) > new Date()) return true;
+      return false;
+    }),
+    [expenses]
+  );
+
+  const handleLinkExpense = (expenseId: string) => {
+    if (!linkingReserve) return;
+    linkExpenseToReserve(expenseId, linkingReserve.id);
+    setLinkingReserve(null);
+  };
+
+  const handleUnlink = (reserveId: string) => {
+    unlinkReserveFromExpense(reserveId);
   };
 
   const getProgress = (r: Reserve) => {
@@ -117,11 +141,32 @@ export default function ReservesPage() {
 
             return (
               <Card key={reserve.id} className="flex flex-col">
+                {!reserve.linkedExpenseId && (
+                  <div className="mb-3 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                      Nicht verknüpft — die zugehörige Ausgabe wird im Forecast zusätzlich berechnet (Doppelzählung).
+                    </p>
+                    <button
+                      onClick={() => setLinkingReserve(reserve)}
+                      className="mt-1.5 text-xs font-semibold text-amber-800 dark:text-amber-200 underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-100"
+                    >
+                      Jetzt mit Ausgabe verknüpfen
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white truncate">{reserve.name}</h3>
                     {linkedName && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">Verknüpft: {linkedName}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 truncate flex items-center gap-1">
+                        <span>Verknüpft: {linkedName}</span>
+                        <button
+                          onClick={() => handleUnlink(reserve.id)}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 ml-1"
+                          title="Verknüpfung aufheben"
+                        >✕</button>
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-1 ml-2 shrink-0">
@@ -168,7 +213,7 @@ export default function ReservesPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Rhythmus</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {reserve.interval === 'quarterly' ? 'Vierteljährlich' : reserve.interval === 'yearly' ? 'Jährlich' : reserve.interval}
+                      {reserve.interval === 'once' ? 'Einmalig' : reserve.interval === 'quarterly' ? 'Vierteljährlich' : reserve.interval === 'yearly' ? 'Jährlich' : reserve.interval}
                     </span>
                   </div>
 
@@ -228,6 +273,47 @@ export default function ReservesPage() {
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Abbrechen</Button>
             <Button variant="danger" onClick={handleDelete}>Löschen</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Link Expense Modal */}
+      <Modal isOpen={!!linkingReserve} onClose={() => setLinkingReserve(null)} title="Ausgabe verknüpfen">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Wähle die wiederkehrende Ausgabe, die zu <strong>{linkingReserve?.name}</strong> gehört.
+            Nach der Verknüpfung wird die Ausgabe nicht mehr separat im Forecast berechnet.
+          </p>
+          {linkableExpenses.length === 0 ? (
+            <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              Keine passenden Ausgaben gefunden. Es werden nur wiederkehrende, nicht-monatliche Ausgaben ohne bestehende Verknüpfung angezeigt.
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {linkableExpenses.map((exp: any) => (
+                <button
+                  key={exp.id}
+                  onClick={() => handleLinkExpense(exp.id)}
+                  className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white text-sm">{exp.title}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {exp.isRecurring
+                          ? (exp.recurrenceInterval === 'yearly' ? 'Jährlich' : exp.recurrenceInterval === 'quarterly' ? 'Vierteljährlich' : exp.recurrenceInterval)
+                          : `Einmalig am ${format(new Date(exp.date), 'dd.MM.yyyy')}`
+                        }
+                      </div>
+                    </div>
+                    <span className="font-semibold text-sm text-gray-900 dark:text-white">{formatCents(exp.amount)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end pt-2">
+            <Button variant="secondary" onClick={() => setLinkingReserve(null)}>Abbrechen</Button>
           </div>
         </div>
       </Modal>

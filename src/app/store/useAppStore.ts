@@ -60,6 +60,14 @@ function advanceIntervalDate(date: Date, interval: string): Date {
   return d;
 }
 
+function intervalToMonths(interval: string): number {
+  switch (interval) {
+    case 'quarterly': return 3;
+    case 'yearly': return 12;
+    default: return 12;
+  }
+}
+
 interface AppStore {
   incomeCategories: IncomeCategory[];
   expenseCategories: ExpenseCategory[];
@@ -90,6 +98,7 @@ interface AppStore {
   deleteExpense: (id: string) => Promise<void>;
   linkExpenseToGoal: (expenseId: string, goalId: string) => void;
   linkExpenseToReserve: (expenseId: string, reserveId: string) => void;
+  unlinkReserveFromExpense: (reserveId: string) => void;
   createAsset: (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateAsset: (payload: Partial<Asset> & { id: string }) => Promise<void>;
   deleteAsset: (id: string) => Promise<void>;
@@ -158,6 +167,7 @@ export const useAppStore = create<AppStore>()(
         let changed = false;
         const updatedReserves = state.reserves.map((r: any) => {
           if (!r.dueDate) return r;
+          if (r.interval === 'once') return r;
           const due = new Date(r.dueDate);
           if (due >= currentMonth) return r;
 
@@ -166,11 +176,7 @@ export const useAppStore = create<AppStore>()(
             nextDue = advanceIntervalDate(nextDue, r.interval);
           }
 
-          const monthsUntil = Math.max(1,
-            (nextDue.getFullYear() - now.getFullYear()) * 12 +
-            (nextDue.getMonth() - now.getMonth())
-          );
-          const newMonthly = Math.ceil(r.targetAmountCents / monthsUntil);
+          const newMonthly = Math.ceil(r.targetAmountCents / intervalToMonths(r.interval));
 
           changed = true;
           return {
@@ -362,10 +368,29 @@ export const useAppStore = create<AppStore>()(
         }));
       },
       linkExpenseToReserve: (expenseId: string, reserveId: string) => {
+        const now = new Date();
         set((state) => ({
           expenses: state.expenses.map((e: any) =>
-            e.id === expenseId ? { ...e, linkedReserveId: reserveId, updatedAt: new Date() } : e
+            e.id === expenseId ? { ...e, linkedReserveId: reserveId, updatedAt: now } : e
           ),
+          reserves: state.reserves.map((r: any) =>
+            r.id === reserveId ? { ...r, linkedExpenseId: expenseId, updatedAt: now } : r
+          ),
+        }));
+      },
+      unlinkReserveFromExpense: (reserveId: string) => {
+        const now = new Date();
+        const reserve = (get() as any).reserves?.find((r: any) => r.id === reserveId);
+        const linkedExpenseId = reserve?.linkedExpenseId;
+        set((state: any) => ({
+          reserves: state.reserves.map((r: any) =>
+            r.id === reserveId ? { ...r, linkedExpenseId: undefined, updatedAt: now } : r
+          ),
+          expenses: linkedExpenseId
+            ? state.expenses.map((e: any) =>
+                e.id === linkedExpenseId ? { ...e, linkedReserveId: undefined, updatedAt: now } : e
+              )
+            : state.expenses,
         }));
       },
       createAsset: async (payload: Omit<any, 'id' | 'createdAt' | 'updatedAt'>) => {
