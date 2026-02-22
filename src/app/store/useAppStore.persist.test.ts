@@ -10,7 +10,7 @@
  * aber in partialize vergessen → Daten gehen bei Reload verloren.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useAppStore } from './useAppStore';
 import { buildPlanInputFromPersistedStore } from '@/planning/adapters/fromPersistedStore';
 
@@ -253,5 +253,188 @@ describe('Store Persistierungs-Roundtrip', () => {
     expect(planInput.expenses.length).toBeGreaterThanOrEqual(1);
     expect(planInput.goals.length).toBeGreaterThanOrEqual(1);
     expect(planInput.reserves.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('advanceReserveCycles setzt fällige Rücklagen auf nächsten Zyklus', async () => {
+    const pastDue = new Date('2025-06-15');
+
+    await useAppStore.getState().createReserve({
+      name: 'Alte Versicherung',
+      targetAmountCents: 120000,
+      currentAmountCents: 120000,
+      monthlyContributionCents: 10000,
+      interval: 'yearly',
+      dueDate: pastDue,
+    });
+
+    const beforeAdvance = useAppStore.getState().reserves;
+    expect(beforeAdvance).toHaveLength(1);
+    expect(new Date(beforeAdvance[0].dueDate!).getFullYear()).toBe(2025);
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const afterAdvance = useAppStore.getState().reserves;
+    expect(afterAdvance).toHaveLength(1);
+
+    const updated = afterAdvance[0];
+    const newDue = new Date(updated.dueDate!);
+    expect(newDue.getFullYear()).toBeGreaterThanOrEqual(2026);
+    expect(updated.currentAmountCents).toBe(0);
+    expect(updated.monthlyContributionCents).toBeGreaterThan(0);
+  });
+
+  it('advanceReserveCycles lässt nicht-fällige Rücklagen unverändert', async () => {
+    const futureDue = new Date('2027-12-01');
+
+    await useAppStore.getState().createReserve({
+      name: 'Zukunft',
+      targetAmountCents: 60000,
+      currentAmountCents: 10000,
+      monthlyContributionCents: 5000,
+      interval: 'yearly',
+      dueDate: futureDue,
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserves = useAppStore.getState().reserves;
+    expect(reserves).toHaveLength(1);
+    expect(reserves[0].currentAmountCents).toBe(10000);
+    expect(reserves[0].monthlyContributionCents).toBe(5000);
+    expect(new Date(reserves[0].dueDate!).getFullYear()).toBe(2027);
+  });
+
+  it('advanceReserveCycles springt über mehrere Zyklen', async () => {
+    const veryOldDue = new Date('2023-03-01');
+
+    await useAppStore.getState().createReserve({
+      name: 'Quartalsgebühr',
+      targetAmountCents: 9000,
+      currentAmountCents: 9000,
+      monthlyContributionCents: 3000,
+      interval: 'quarterly',
+      dueDate: veryOldDue,
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserves = useAppStore.getState().reserves;
+    const newDue = new Date(reserves[0].dueDate!);
+    const now = new Date();
+    expect(newDue >= new Date(now.getFullYear(), now.getMonth(), 1)).toBe(true);
+    expect(reserves[0].currentAmountCents).toBe(0);
+    expect(reserves[0].monthlyContributionCents).toBeGreaterThan(0);
+  });
+
+  // --- Realwelt-Szenarien: KFZ-Versicherung jährlich am 30. Dezember ---
+
+  it('KFZ-Szenario: Im Dezember 2026 (Fälligkeitsmonat) noch KEIN Reset', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-12-15'));
+
+    await useAppStore.getState().createReserve({
+      name: 'KFZ Versicherung',
+      targetAmountCents: 158200,
+      currentAmountCents: 158200,
+      monthlyContributionCents: 15820,
+      interval: 'yearly',
+      dueDate: new Date('2026-12-30'),
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserve = useAppStore.getState().reserves[0];
+    const due = new Date(reserve.dueDate!);
+    expect(due.getFullYear()).toBe(2026);
+    expect(due.getMonth()).toBe(11);
+    expect(due.getDate()).toBe(30);
+    expect(reserve.currentAmountCents).toBe(158200);
+    expect(reserve.monthlyContributionCents).toBe(15820);
+
+    vi.useRealTimers();
+  });
+
+  it('KFZ-Szenario: Im Januar 2027 wird auf Dez 2027 weitergeschaltet', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2027-01-15'));
+
+    await useAppStore.getState().createReserve({
+      name: 'KFZ Versicherung',
+      targetAmountCents: 158200,
+      currentAmountCents: 158200,
+      monthlyContributionCents: 15820,
+      interval: 'yearly',
+      dueDate: new Date('2026-12-30'),
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserve = useAppStore.getState().reserves[0];
+    const newDue = new Date(reserve.dueDate!);
+
+    expect(newDue.getFullYear()).toBe(2027);
+    expect(newDue.getMonth()).toBe(11); // Dezember
+    expect(newDue.getDate()).toBe(30);
+    expect(reserve.currentAmountCents).toBe(0);
+    // Jan → Dez = 11 Monate, neue Sparrate = ceil(158200 / 11) = 14382
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 11));
+
+    vi.useRealTimers();
+  });
+
+  it('KFZ-Szenario: Im Januar 2028 (zweites Jahr) erneuter Reset auf Dez 2028', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2028-01-10'));
+
+    await useAppStore.getState().createReserve({
+      name: 'KFZ Versicherung',
+      targetAmountCents: 158200,
+      currentAmountCents: 158200,
+      monthlyContributionCents: 14382,
+      interval: 'yearly',
+      dueDate: new Date('2027-12-30'),
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserve = useAppStore.getState().reserves[0];
+    const newDue = new Date(reserve.dueDate!);
+
+    expect(newDue.getFullYear()).toBe(2028);
+    expect(newDue.getMonth()).toBe(11);
+    expect(newDue.getDate()).toBe(30);
+    expect(reserve.currentAmountCents).toBe(0);
+    // Jan → Dez = 11 Monate
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(158200 / 11));
+
+    vi.useRealTimers();
+  });
+
+  it('Quartals-Szenario: April-Fälligkeit wird im Mai auf Juli weitergeschaltet', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2027-05-01'));
+
+    await useAppStore.getState().createReserve({
+      name: 'GEZ',
+      targetAmountCents: 5520,
+      currentAmountCents: 5520,
+      monthlyContributionCents: 1840,
+      interval: 'quarterly',
+      dueDate: new Date('2027-04-15'),
+    });
+
+    useAppStore.getState().advanceReserveCycles();
+
+    const reserve = useAppStore.getState().reserves[0];
+    const newDue = new Date(reserve.dueDate!);
+
+    expect(newDue.getFullYear()).toBe(2027);
+    expect(newDue.getMonth()).toBe(6); // Juli
+    expect(newDue.getDate()).toBe(15);
+    expect(reserve.currentAmountCents).toBe(0);
+    // Mai → Juli = 2 Monate
+    expect(reserve.monthlyContributionCents).toBe(Math.ceil(5520 / 2));
+
+    vi.useRealTimers();
   });
 });

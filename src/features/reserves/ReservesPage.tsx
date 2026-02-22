@@ -161,15 +161,29 @@ export default function ReservesPage() {
                   </div>
 
                   <div className="flex justify-between text-sm border-t border-gray-100 dark:border-gray-700 pt-2 mt-2">
-                    <span className="text-gray-500 dark:text-gray-400">Monatlich</span>
+                    <span className="text-gray-500 dark:text-gray-400">Sparrate / Monat</span>
                     <span className="font-semibold text-primary-600 dark:text-primary-400">{formatCents(reserve.monthlyContributionCents)}</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Rhythmus</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {reserve.interval === 'quarterly' ? 'Vierteljährlich' : reserve.interval === 'yearly' ? 'Jährlich' : reserve.interval}
+                    </span>
                   </div>
 
                   {monthsLeft !== null && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Fällig in</span>
+                      <span className="text-gray-500 dark:text-gray-400">Nächste Fälligkeit</span>
                       <span className={`font-medium ${getStatusColor(reserve)}`}>
-                        {monthsLeft === 0 ? 'Diesen Monat' : `${monthsLeft} Monate${monthsLeft === 1 ? '' : 'n'}`}
+                        {monthsLeft === 0
+                          ? 'Diesen Monat'
+                          : `in ${monthsLeft} ${monthsLeft === 1 ? 'Monat' : 'Monaten'}`}
+                        {reserve.dueDate && (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs ml-1">
+                            ({new Date(reserve.dueDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })})
+                          </span>
+                        )}
                       </span>
                     </div>
                   )}

@@ -50,6 +50,16 @@ function rehydrateDates(state: any) {
   };
 }
 
+function advanceIntervalDate(date: Date, interval: string): Date {
+  const d = new Date(date);
+  switch (interval) {
+    case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+    case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
+    default: d.setFullYear(d.getFullYear() + 1); break;
+  }
+  return d;
+}
+
 interface AppStore {
   incomeCategories: IncomeCategory[];
   expenseCategories: ExpenseCategory[];
@@ -63,6 +73,7 @@ interface AppStore {
   error: string | null;
 
   ensureReferenceData: () => void;
+  advanceReserveCycles: () => void;
   loadData: () => Promise<void>;
   initializeSeedData: () => Promise<void>;
   createIncomeCategory: () => Promise<void>;
@@ -138,8 +149,46 @@ export const useAppStore = create<AppStore>()(
       },
 
       // Actions: Nur leere async-Methoden (Stubs)
+      advanceReserveCycles: () => {
+        const now = new Date();
+        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const state = get();
+        if (!state.reserves || state.reserves.length === 0) return;
+
+        let changed = false;
+        const updatedReserves = state.reserves.map((r: any) => {
+          if (!r.dueDate) return r;
+          const due = new Date(r.dueDate);
+          if (due >= currentMonth) return r;
+
+          let nextDue = new Date(due);
+          while (nextDue < currentMonth) {
+            nextDue = advanceIntervalDate(nextDue, r.interval);
+          }
+
+          const monthsUntil = Math.max(1,
+            (nextDue.getFullYear() - now.getFullYear()) * 12 +
+            (nextDue.getMonth() - now.getMonth())
+          );
+          const newMonthly = Math.ceil(r.targetAmountCents / monthsUntil);
+
+          changed = true;
+          return {
+            ...r,
+            dueDate: nextDue,
+            currentAmountCents: 0,
+            monthlyContributionCents: newMonthly,
+            updatedAt: now,
+          };
+        });
+
+        if (changed) {
+          set({ reserves: updatedReserves });
+        }
+      },
       loadData: async () => {
         get().ensureReferenceData();
+        get().advanceReserveCycles();
       },
       initializeSeedData: async () => {
         get().ensureReferenceData();
@@ -518,6 +567,7 @@ export const useAppStore = create<AppStore>()(
         if (state) {
           const hydrated = rehydrateDates(state);
           Object.assign(state, hydrated);
+          setTimeout(() => useAppStore.getState().advanceReserveCycles(), 0);
         }
       },
     }
