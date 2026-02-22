@@ -65,14 +65,19 @@ export interface RecurringExpense {
 }
 
 /**
- * Expected but irregular cost, handled via a reserve.
+ * Sinking Fund: recurring, non-monthly obligation spread into monthly reserves.
+ * Flows into Bound (mandatory), NOT Planned (Goals).
+ * E.g. yearly car insurance → 12 monthly reserves → payment in due month.
  */
 export interface ReserveBucket {
   id: string;
   name: string;
   targetAmount: Money;
-  monthlyContribution: Money; // planning value
+  monthlyContribution: Money;
   currentAmount?: Money;
+  interval: Interval;
+  dueDate?: IsoDate;
+  linkedExpenseId?: string;
   note?: string;
 }
 

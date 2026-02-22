@@ -7,6 +7,7 @@ import type {
   Asset,
   FinancialGoal,
   Recommendation,
+  Reserve,
 } from '@shared/types';
 import { persist } from 'zustand/middleware';
 import { assetRepository, goalRepository } from '../../data/repositories';
@@ -43,6 +44,9 @@ function rehydrateDates(state: any) {
     goals: Array.isArray(state.goals)
       ? state.goals.map((g: any) => fixDate(g, ['createdAt', 'updatedAt']))
       : [],
+    reserves: Array.isArray(state.reserves)
+      ? state.reserves.map((r: any) => fixDate(r, ['dueDate', 'createdAt', 'updatedAt']))
+      : [],
   };
 }
 
@@ -53,6 +57,7 @@ interface AppStore {
   expenses: Expense[];
   assets: Asset[];
   goals: FinancialGoal[];
+  reserves: Reserve[];
   recommendations: Recommendation[];
   isLoading: boolean;
   error: string | null;
@@ -73,12 +78,16 @@ interface AppStore {
   updateExpense: (payload: Partial<Expense> & { id: string }) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   linkExpenseToGoal: (expenseId: string, goalId: string) => void;
+  linkExpenseToReserve: (expenseId: string, reserveId: string) => void;
   createAsset: (payload: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateAsset: (payload: Partial<Asset> & { id: string }) => Promise<void>;
   deleteAsset: (id: string) => Promise<void>;
   createGoal: (payload: Omit<FinancialGoal, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateGoal: (id: string, updatedFields: Partial<FinancialGoal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  createReserve: (payload: Omit<Reserve, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateReserve: (payload: Partial<Reserve> & { id: string }) => Promise<void>;
+  deleteReserve: (id: string) => Promise<void>;
   generateRecommendations: () => Promise<void>;
   deleteRecommendation: (id: string) => Promise<void>;
 }
@@ -92,6 +101,7 @@ export const useAppStore = create<AppStore>()(
       expenses: [],
       assets: [],
       goals: [],
+      reserves: [],
       recommendations: [],
       isLoading: true,
       error: null,
@@ -284,17 +294,28 @@ export const useAppStore = create<AppStore>()(
       deleteExpense: async (id: string) => {
         const expense = get().expenses.find((e: any) => e.id === id);
         const linkedGoalId = (expense as any)?.linkedGoalId;
-        set((state) => ({
+        const linkedReserveId = (expense as any)?.linkedReserveId;
+        set((state: any) => ({
           expenses: state.expenses.filter((e: any) => e.id !== id),
           goals: linkedGoalId
             ? state.goals.filter((g: any) => g.id !== linkedGoalId)
             : state.goals,
+          reserves: linkedReserveId
+            ? state.reserves.filter((r: any) => r.id !== linkedReserveId)
+            : state.reserves,
         }));
       },
       linkExpenseToGoal: (expenseId: string, goalId: string) => {
         set((state) => ({
           expenses: state.expenses.map((e: any) =>
             e.id === expenseId ? { ...e, linkedGoalId: goalId, updatedAt: new Date() } : e
+          ),
+        }));
+      },
+      linkExpenseToReserve: (expenseId: string, reserveId: string) => {
+        set((state) => ({
+          expenses: state.expenses.map((e: any) =>
+            e.id === expenseId ? { ...e, linkedReserveId: reserveId, updatedAt: new Date() } : e
           ),
         }));
       },
@@ -405,6 +426,36 @@ export const useAppStore = create<AppStore>()(
             : state.expenses,
         }));
       },
+      createReserve: async (payload) => {
+        const now = new Date();
+        const id = `res${Date.now()}`;
+        const newReserve = { ...payload, id, createdAt: now, updatedAt: now };
+        set((state) => ({
+          reserves: [...state.reserves, newReserve as any],
+        }));
+        return id;
+      },
+      updateReserve: async (payload) => {
+        if (!payload?.id) return;
+        set((state) => ({
+          reserves: state.reserves.map((r: any) =>
+            r.id === payload.id ? { ...r, ...payload, updatedAt: new Date() } : r
+          ),
+        }));
+      },
+      deleteReserve: async (id) => {
+        if (!id) return;
+        const reserve = (get() as any).reserves?.find((r: any) => r.id === id);
+        const linkedExpenseId = reserve?.linkedExpenseId;
+        set((state: any) => ({
+          reserves: state.reserves.filter((r: any) => r.id !== id),
+          expenses: linkedExpenseId
+            ? state.expenses.map((e: any) =>
+                e.id === linkedExpenseId ? { ...e, linkedReserveId: undefined, updatedAt: new Date() } : e
+              )
+            : state.expenses,
+        }));
+      },
       generateRecommendations: async () => {
         const { expenses, expenseCategories } = get();
         const newRecs = recommendationService.generateRecommendations(expenses, expenseCategories);
@@ -460,6 +511,7 @@ export const useAppStore = create<AppStore>()(
         expenses: state.expenses,
         assets: state.assets,
         goals: state.goals,
+        reserves: state.reserves,
         recommendations: state.recommendations
       }),
       onRehydrateStorage: () => (state) => {

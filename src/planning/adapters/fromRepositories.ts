@@ -30,9 +30,12 @@ import type {
   Expense,
   Asset,
   FinancialGoal,
+  Reserve,
   RecurrenceInterval,
   GoalPriority as RepoGoalPriority
 } from '../../shared/types/index';
+
+import type { ReserveBucket } from '../../domain/types';
 
 function toIsoDate(d?: Date): IsoDate | undefined {
   if (!d) return undefined;
@@ -168,11 +171,26 @@ export function mapAssetToInvestmentPlan(a: Asset): InvestmentPlan {
   };
 }
 
+export function mapReserveToDomain(r: Reserve): ReserveBucket {
+  return {
+    id: r.id,
+    name: r.name,
+    targetAmount: r.targetAmountCents,
+    monthlyContribution: r.monthlyContributionCents,
+    currentAmount: r.currentAmountCents,
+    interval: mapRecurrenceIntervalToInterval(r.interval),
+    dueDate: r.dueDate ? toIsoDate(r.dueDate) : undefined,
+    linkedExpenseId: r.linkedExpenseId,
+    note: r.notes,
+  };
+}
+
 export function buildPlanInputFromRepoData(args: {
   incomes: Income[];
   expenses: Expense[];
   goals: FinancialGoal[];
   assets: Asset[];
+  reserves?: Reserve[];
 }): PlanInput {
   // Recurring incomes as before
   const recurringIncomes = args.incomes
@@ -186,8 +204,11 @@ export function buildPlanInputFromRepoData(args: {
     .map(mapOneTimeIncomeToDomain);
 
   const incomes = [...recurringIncomes, ...oneTimeIncomes];
-  // Recurring expenses only
-  const expenses = args.expenses.map(mapExpenseToDomain).filter((x): x is RecurringExpense => Boolean(x));
+  // Recurring expenses: exclude those with a linked reserve (handled via reserve's monthly contribution)
+  const expenses = args.expenses
+    .filter(e => !(e as any).linkedReserveId)
+    .map(mapExpenseToDomain)
+    .filter((x): x is RecurringExpense => Boolean(x));
 
   // One-time (non-recurring) expenses as KnownFuturePayment.
   // Expenses with a linked savings goal are excluded: the goal's monthly
@@ -214,10 +235,12 @@ export function buildPlanInputFromRepoData(args: {
   const goals = args.goals.map(mapGoalToDomain);
   const investments = args.assets.map(mapAssetToInvestmentPlan);
 
+  const reserves = (args.reserves ?? []).map(mapReserveToDomain);
+
   return {
     incomes,
     expenses,
-    reserves: [],
+    reserves,
     goals,
     investments,
     knownPayments,

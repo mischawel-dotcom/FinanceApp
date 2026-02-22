@@ -94,6 +94,25 @@ export interface Expense {
   isRecurring?: boolean;
   recurrenceInterval?: RecurrenceInterval;
   linkedGoalId?: string;
+  linkedReserveId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Sinking Fund / Rücklage (UI/persistence layer).
+ * Amounts in Cents. Mapped to domain ReserveBucket via adapter.
+ */
+export interface Reserve {
+  id: string;
+  name: string;
+  targetAmountCents: number;
+  currentAmountCents: number;
+  monthlyContributionCents: number;
+  interval: RecurrenceInterval;
+  dueDate?: Date;
+  linkedExpenseId?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }

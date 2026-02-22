@@ -1,6 +1,6 @@
   it("edits a goal and updates UI immediately", async () => {
     // Seed store with one goal and working updateGoal action
-    const g1 = { id: "g1", name: "Urlaub", priority: "medium", targetAmountCents: 10000, currentAmountCents: 1000, monthlyContributionCents: 50000 };
+    const g1 = { id: "g1", name: "Urlaub", priority: "medium", targetAmount: 100, currentAmount: 10, targetAmountCents: 10000, currentAmountCents: 1000, monthlyContributionCents: 50000 };
     useAppStore.setState({
       goals: [g1],
       updateGoal: async (id: string, updatedFields: any) => {

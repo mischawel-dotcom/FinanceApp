@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
-import type { Expense, ExpenseCategory } from '@shared/types';
+import type { Expense, ExpenseCategory, RecurrenceInterval } from '@shared/types';
 import { Button, Card, Modal, Table } from '@shared/components';
 import { formatCents } from '@/ui/formatMoney';
 import { ExpenseCategoryForm } from './ExpenseCategoryForm';
@@ -16,11 +16,22 @@ interface SavingSuggestion {
   suggestedRateCents: number;
 }
 
+interface ReserveSuggestion {
+  expenseId: string;
+  title: string;
+  amountCents: number;
+  interval: RecurrenceInterval;
+  dueDate: Date;
+  monthsUntilDue: number;
+  suggestedRateCents: number;
+}
+
 export default function ExpensesPage() {
   const { 
     expenseCategories, 
     expenses, 
     goals,
+    reserves,
     createExpenseCategory, 
     updateExpenseCategory, 
     deleteExpenseCategory,
@@ -29,6 +40,8 @@ export default function ExpensesPage() {
     deleteExpense,
     createGoal,
     linkExpenseToGoal,
+    createReserve,
+    linkExpenseToReserve,
     loadData
   } = useAppStore();
 
@@ -44,6 +57,7 @@ export default function ExpensesPage() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [activeTab, setActiveTab] = useState<'entries' | 'categories'>('entries');
   const [savingSuggestion, setSavingSuggestion] = useState<SavingSuggestion | null>(null);
+  const [reserveSuggestion, setReserveSuggestion] = useState<ReserveSuggestion | null>(null);
 
   // Category Handlers
   const handleCreateCategory = async (data: Omit<ExpenseCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -75,26 +89,46 @@ export default function ExpensesPage() {
     setIsCategoryModalOpen(true);
   };
 
+  const NON_MONTHLY_INTERVALS: RecurrenceInterval[] = ['quarterly', 'yearly'];
+
   // Expense Handlers
   const handleCreateExpense = async (payload: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
     const expenseId = await createExpense(payload);
     setIsExpenseModalOpen(false);
     setEditingExpense(null);
 
-    // Only suggest savings goal for one-time (non-recurring), high-amount, future expenses.
-    // Recurring expenses are already handled by the forecast via monthly normalization.
-    if (payload.isRecurring) return;
-    if (payload.amount < 20000) return;
-
+    const id = expenseId || useAppStore.getState().expenses.slice(-1)[0]?.id;
+    if (!id) return;
     const expenseDate = payload.date instanceof Date ? payload.date : new Date(payload.date);
     const now = new Date();
     const monthsDiff =
       (expenseDate.getFullYear() - now.getFullYear()) * 12 +
       (expenseDate.getMonth() - now.getMonth());
-    if (monthsDiff < 2) return;
 
-    const id = expenseId || useAppStore.getState().expenses.slice(-1)[0]?.id;
-    if (!id) return;
+    // Recurring non-monthly → suggest Reserve (Sinking Fund)
+    if (
+      payload.isRecurring &&
+      payload.recurrenceInterval &&
+      NON_MONTHLY_INTERVALS.includes(payload.recurrenceInterval) &&
+      payload.amount >= 5000 // >= 50 EUR
+    ) {
+      const intervalMonths = payload.recurrenceInterval === 'yearly' ? 12 : 3;
+      setReserveSuggestion({
+        expenseId: id,
+        title: (payload as any).title ?? 'Ausgabe',
+        amountCents: payload.amount,
+        interval: payload.recurrenceInterval,
+        dueDate: expenseDate,
+        monthsUntilDue: intervalMonths,
+        suggestedRateCents: Math.ceil(payload.amount / intervalMonths),
+      });
+      return;
+    }
+
+    // One-time, high-amount, future → suggest savings Goal
+    if (payload.isRecurring) return;
+    if (payload.amount < 20000) return;
+    if (monthsDiff < 2) return;
 
     setSavingSuggestion({
       expenseId: id,
@@ -127,6 +161,24 @@ export default function ExpensesPage() {
     setSavingSuggestion(null);
   };
 
+  const handleAcceptReserveSuggestion = async () => {
+    if (!reserveSuggestion) return;
+    const { expenseId, title, amountCents, interval, dueDate, suggestedRateCents } = reserveSuggestion;
+    const reserveId = await createReserve({
+      name: `Rücklage: ${title}`,
+      targetAmountCents: amountCents,
+      currentAmountCents: 0,
+      monthlyContributionCents: suggestedRateCents,
+      interval,
+      dueDate,
+      linkedExpenseId: expenseId,
+    });
+    if (reserveId) {
+      linkExpenseToReserve(expenseId, reserveId);
+    }
+    setReserveSuggestion(null);
+  };
+
   const handleUpdateExpense = async (payload: Expense) => {
     await updateExpense(payload);
     setEditingExpense(null);
@@ -138,10 +190,16 @@ export default function ExpensesPage() {
     const linkedGoal = (expense as any)?.linkedGoalId
       ? goals.find((g) => g.id === (expense as any).linkedGoalId)
       : null;
+    const linkedReserve = (expense as any)?.linkedReserveId
+      ? reserves.find((r) => r.id === (expense as any).linkedReserveId)
+      : null;
 
-    const message = linkedGoal
-      ? `Diese Ausgabe hat ein verknüpftes Sparziel „${linkedGoal.name}". Beides wird gelöscht.\n\nTrotzdem löschen?`
-      : 'Ausgabe wirklich löschen?';
+    let message = 'Ausgabe wirklich löschen?';
+    if (linkedGoal) {
+      message = `Diese Ausgabe hat ein verknüpftes Sparziel „${linkedGoal.name}". Beides wird gelöscht.\n\nTrotzdem löschen?`;
+    } else if (linkedReserve) {
+      message = `Diese Ausgabe hat eine verknüpfte Rücklage „${linkedReserve.name}". Beides wird gelöscht.\n\nTrotzdem löschen?`;
+    }
 
     if (!confirm(message)) return;
     await deleteExpense(id);
@@ -500,6 +558,42 @@ export default function ExpensesPage() {
               </Button>
               <Button variant="primary" onClick={handleAcceptSuggestion}>
                 Sparziel erstellen
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reserve Suggestion Modal */}
+      <Modal
+        isOpen={!!reserveSuggestion}
+        onClose={() => setReserveSuggestion(null)}
+        title="Rücklage anlegen?"
+      >
+        {reserveSuggestion && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              <strong>„{reserveSuggestion.title}"</strong> kostet{' '}
+              <strong>{formatCents(reserveSuggestion.amountCents)}</strong> und wird{' '}
+              <strong>{reserveSuggestion.interval === 'yearly' ? 'jährlich' : 'vierteljährlich'}</strong> fällig.
+            </p>
+            <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
+              <p className="text-sm text-primary-800 dark:text-primary-200">
+                Monatliche Rücklage:{' '}
+                <strong>{formatCents(reserveSuggestion.suggestedRateCents)}</strong>{' '}
+                über <strong>{reserveSuggestion.monthsUntilDue} Monate</strong>
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Die Rücklage wird als monatlicher Pflichtbetrag (Bound) in der Finanzplanung berücksichtigt.
+              Die wiederkehrende Ausgabe wird dann nicht mehr separat berechnet — keine Doppelzählung.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" onClick={() => setReserveSuggestion(null)}>
+                Nein danke
+              </Button>
+              <Button variant="primary" onClick={handleAcceptReserveSuggestion}>
+                Rücklage erstellen
               </Button>
             </div>
           </div>

@@ -15,6 +15,7 @@ import type { PlanInput, PlanProjection, MonthKey } from './types';
 import type {
   RecurringIncome,
   RecurringExpense,
+  ReserveBucket,
   Goal,
   InvestmentPlan,
   Interval,
@@ -101,10 +102,31 @@ function createBaseInput(): PlanInput {
     { id: uid('inv'), name: 'Aktien', monthlyContribution: 10000 },
   ];
 
+  const reserves: ReserveBucket[] = [
+    {
+      id: uid('res'),
+      name: 'KFZ Versicherung',
+      targetAmount: 120000,
+      monthlyContribution: 10000,
+      currentAmount: 30000,
+      interval: 'yearly',
+      dueDate: '2026-11-01',
+    },
+    {
+      id: uid('res'),
+      name: 'GEZ',
+      targetAmount: 5220,
+      monthlyContribution: 1740,
+      currentAmount: 0,
+      interval: 'quarterly',
+      dueDate: '2026-04-01',
+    },
+  ];
+
   return {
     incomes,
     expenses,
-    reserves: [],
+    reserves,
     goals,
     investments,
     knownPayments: [],
@@ -257,6 +279,42 @@ const mutations: MutationFn[] = [
     const old = exp.amount;
     exp.amount = randomInt(1000, 80000);
     return `~ Ausgabe "${exp.name}" ${old} -> ${exp.amount} ct`;
+  },
+
+  // Add a new reserve
+  (input) => {
+    const target = randomInt(50000, 300000);
+    const interval = pickRandom<Interval>(['quarterly', 'yearly']);
+    const months = interval === 'yearly' ? 12 : 3;
+    const monthly = Math.ceil(target / months);
+    const month = randomInt(1, 12).toString().padStart(2, '0');
+    input.reserves.push({
+      id: uid('res'),
+      name: 'Neue Rücklage',
+      targetAmount: target,
+      monthlyContribution: monthly,
+      currentAmount: 0,
+      interval,
+      dueDate: `2026-${month}-01`,
+    });
+    return `+ Rücklage ${interval} target=${target} monthly=${monthly} ct`;
+  },
+
+  // Remove a random reserve (if >1)
+  (input) => {
+    if (input.reserves.length <= 1) return '(skip: nur 1 Rücklage)';
+    const idx = randomInt(0, input.reserves.length - 1);
+    const removed = input.reserves.splice(idx, 1)[0];
+    return `- Rücklage "${removed.name}" entfernt`;
+  },
+
+  // Change reserve contribution
+  (input) => {
+    if (input.reserves.length === 0) return '(skip: keine Rücklagen)';
+    const res = pickRandom(input.reserves);
+    const old = res.monthlyContribution;
+    res.monthlyContribution = randomInt(1000, 30000);
+    return `~ Rücklage "${res.name}" ${old} -> ${res.monthlyContribution} ct`;
   },
 ];
 
@@ -598,6 +656,104 @@ describe('Forecast Integration: 10 Mutationsrunden', () => {
         expect(mp.buckets.bound).toBe(0);
       }
     }
+  });
+
+  it('Edge: Reserve-Beitrag fließt jeden Monat in Bound', () => {
+    const input: PlanInput = {
+      incomes: [
+        { id: 'sal', name: 'Gehalt', amount: 500000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
+      ],
+      expenses: [],
+      reserves: [
+        {
+          id: 'res-kfz',
+          name: 'KFZ Versicherung',
+          targetAmount: 120000,
+          monthlyContribution: 10000,
+          currentAmount: 0,
+          interval: 'yearly',
+          dueDate: '2026-12-01',
+        },
+      ],
+      goals: [],
+      investments: [],
+    };
+
+    const projection = buildPlanProjection(input, {
+      forecastMonths: 12,
+      startMonth: '2026-01' as MonthKey,
+    });
+
+    for (const mp of projection.timeline) {
+      expect(mp.buckets.bound).toBe(10000);
+      expect(mp.buckets.free).toBe(500000 - 10000);
+    }
+  });
+
+  it('Edge: Mehrere Rücklagen addieren sich in Bound', () => {
+    const input: PlanInput = {
+      incomes: [
+        { id: 'sal', name: 'Gehalt', amount: 500000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
+      ],
+      expenses: [
+        { id: 'miete', name: 'Miete', amount: 100000, interval: 'monthly', startDate: '2026-01-01' },
+      ],
+      reserves: [
+        { id: 'res1', name: 'KFZ', targetAmount: 120000, monthlyContribution: 10000, interval: 'yearly', dueDate: '2026-12-01' },
+        { id: 'res2', name: 'GEZ', targetAmount: 5220, monthlyContribution: 1740, interval: 'quarterly', dueDate: '2026-04-01' },
+      ],
+      goals: [],
+      investments: [],
+    };
+
+    const projection = buildPlanProjection(input, {
+      forecastMonths: 3,
+      startMonth: '2026-01' as MonthKey,
+    });
+
+    const expectedBound = 100000 + 10000 + 1740;
+    for (const mp of projection.timeline) {
+      expect(mp.buckets.bound).toBe(expectedBound);
+      expect(mp.buckets.free).toBe(500000 - expectedBound);
+    }
+    verifyProjection(input, projection, 'MultiReserve');
+  });
+
+  it('Edge: Reserve + Ausgabe + Ziel korrekt separiert', () => {
+    const input: PlanInput = {
+      incomes: [
+        { id: 'sal', name: 'Gehalt', amount: 500000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
+      ],
+      expenses: [
+        { id: 'miete', name: 'Miete', amount: 100000, interval: 'monthly', startDate: '2026-01-01' },
+      ],
+      reserves: [
+        { id: 'res1', name: 'Versicherung', targetAmount: 60000, monthlyContribution: 5000, interval: 'yearly', dueDate: '2026-12-01' },
+      ],
+      goals: [
+        { id: 'g1', name: 'Urlaub', targetAmountCents: 200000, currentAmountCents: 0, monthlyContributionCents: 20000, priority: 2 },
+      ],
+      investments: [
+        { id: 'inv1', name: 'ETF', monthlyContribution: 15000 },
+      ],
+    };
+
+    const projection = buildPlanProjection(input, {
+      forecastMonths: 3,
+      startMonth: '2026-01' as MonthKey,
+    });
+
+    for (const mp of projection.timeline) {
+      // Bound = expense (100000) + reserve (5000)
+      expect(mp.buckets.bound).toBe(105000);
+      // Invested = ETF (15000)
+      expect(mp.buckets.invested).toBe(15000);
+      // Planned = goal contribution (capped, max 20000/month)
+      expect(mp.buckets.planned).toBeLessThanOrEqual(20000);
+      expect(mp.buckets.planned).toBeGreaterThanOrEqual(0);
+    }
+    verifyProjection(input, projection, 'MixedBuckets');
+    verifyGoalCapping(input, projection, 'MixedBuckets');
   });
 
   it('Edge: Ziel-Capping stoppt bei Zielerreichung', () => {

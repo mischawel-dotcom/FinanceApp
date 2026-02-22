@@ -15,28 +15,26 @@
             expect(summary).toBeDefined();
             expect(summary?.reachable).toBe(true);
           });
-        it('past one-time expense does not affect current or future month buckets', () => {
+        it('past one-time payment does not affect current or future month buckets', () => {
           const incomes = [
             { id: 'i1', name: 'Salary', amount: 100000, interval: 'monthly', confidence: 'fixed', startDate: '2026-01-01' },
           ];
-          const expenses = [
-            // Past one-time expense (should NOT affect any bucket)
-            { id: 'ePast', name: 'Past One-Time', amount: 300000, interval: 'once', startDate: '2026-01-15' },
-            // Current recurring expense (should affect both months)
+          const expenses: RecurringExpense[] = [
             { id: 'eRec', name: 'Current Recurring', amount: 1000, interval: 'monthly', startDate: '2026-02-01' },
           ];
+          const knownPayments: KnownFuturePayment[] = [
+            { id: 'ePast', name: 'Past One-Time', amount: 300000, dueDate: '2026-01-15' },
+          ];
           const settings = { forecastMonths: 2, startMonth: '2026-02' };
-          const input = mkInput({ incomes, expenses });
+          const input = mkInput({ incomes, expenses, knownPayments });
           const proj = buildPlanProjection(input, settings);
           expect(proj.timeline).toHaveLength(2);
           const m1 = proj.timeline[0];
           const m2 = proj.timeline[1];
           expect(m1.month).toBe('2026-02');
           expect(m2.month).toBe('2026-03');
-          // Only the current recurring expense should be counted
           expect(m1.buckets.bound).toBe(1000);
           expect(m2.buckets.bound).toBe(1000);
-          // Optional guards: integer/finite
           [m1.buckets.bound, m2.buckets.bound].forEach(x => {
             expect(Number.isFinite(x)).toBe(true);
             expect(Number.isInteger(x)).toBe(true);
@@ -148,23 +146,24 @@ function mkInput(partial?: Partial<PlanInput>): PlanInput {
 }
 
 describe('buildPlanProjection (Planning / Forecast MVP)', () => {
-  it('normalizes yearly expense 1200 to 100 per month', () => {
+  it('yearly expense appears as lump-sum in occurrence month only', () => {
     const expenses: RecurringExpense[] = [
       {
         id: 'e1',
         name: 'Insurance',
         amount: 1200,
         interval: 'yearly',
-        // startDate/endDate optional
+        startDate: '2026-03-01',
       },
     ];
 
-    const settings: PlanSettings = { forecastMonths: 1, startMonth: '2026-02' as MonthKey };
+    const settings: PlanSettings = { forecastMonths: 2, startMonth: '2026-02' as MonthKey };
     const input = mkInput({ expenses });
 
     const proj = buildPlanProjection(input, settings);
-    expect(proj.timeline).toHaveLength(1);
-    expect(proj.timeline[0].buckets.bound).toBeCloseTo(100, 10);
+    expect(proj.timeline).toHaveLength(2);
+    expect(proj.timeline[0].buckets.bound).toBe(0);
+    expect(proj.timeline[1].buckets.bound).toBe(1200);
   });
 
   it('includes known future payment amount in bound bucket for that month', () => {

@@ -11,6 +11,7 @@ import RecommendationsPage from '@features/recommendations/RecommendationsPage';
 import PlanningPage from '@features/planning/PlanningPage';
 import ReportsPage from '@features/reports/ReportsPage';
 import SettingsPage from '@features/settings/SettingsPage';
+import ReservesPage from '@features/reserves/ReservesPage';
 
 export default function AppRouter() {
   return (
@@ -22,6 +23,7 @@ export default function AppRouter() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/goals" element={<GoalsPage />} />
+          <Route path="/reserves" element={<ReservesPage />} />
           <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/planning" element={<PlanningPage />} />
           <Route path="/reports" element={<ReportsPage />} />

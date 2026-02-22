@@ -22,6 +22,7 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
   const storeIncomes = useAppStore((s) => s.incomes);
   const storeExpenses = useAppStore((s) => s.expenses);
   const storeAssets = useAppStore((s) => s.assets);
+  const storeReserves = useAppStore((s) => s.reserves);
 
   type Shortfall = { month: string; amount: number };
   const shortfalls: Shortfall[] = [];
@@ -84,7 +85,7 @@ export default function DashboardPlanningPreview({ onFlowKpis }: { onFlowKpis?: 
         setError(e instanceof Error ? e.message : String(e));
       }
     })();
-  }, [storeIncomes, storeExpenses, storeGoals, storeAssets]);
+  }, [storeIncomes, storeExpenses, storeGoals, storeAssets, storeReserves]);
 
   if (error) return <div style={{ padding: 16 }}>❌ Fehler: {error}</div>;
   if (!model) return <div style={{ padding: 16 }}>Loading planning…</div>;

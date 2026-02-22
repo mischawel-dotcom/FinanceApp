@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { path: '/', label: 'Dashboard', icon: '📊' },
   { path: '/income', label: 'Einkommen', icon: '💰' },
   { path: '/expenses', label: 'Ausgaben', icon: '💸' },
+  { path: '/reserves', label: 'Rücklagen', icon: '🏦' },
   { path: '/assets', label: 'Anlagen', icon: '📈' },
   { path: '/goals', label: 'Ziele', icon: '🎯' },
   { path: '/planning', label: 'Planung', icon: '📋' },
@@ -29,6 +30,7 @@ const bottomTabItems: NavItem[] = [
 
 const moreMenuItems: NavItem[] = [
   { path: '/income', label: 'Einkommen', icon: '💰' },
+  { path: '/reserves', label: 'Rücklagen', icon: '🏦' },
   { path: '/assets', label: 'Anlagen', icon: '📈' },
   { path: '/goals', label: 'Ziele', icon: '🎯' },
   { path: '/reports', label: 'Reports', icon: '📄' },

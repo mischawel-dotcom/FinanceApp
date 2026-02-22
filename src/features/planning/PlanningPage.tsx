@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '@/app/store/useAppStore';
 import { Card, Button } from '@shared/components';
 import { formatCents } from '@/ui/formatMoney';
 import { buildDashboardModelFromRepositories } from '@/planning/planFacade';
@@ -48,6 +49,12 @@ export default function PlanningPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const storeIncomes = useAppStore((s) => s.incomes);
+  const storeExpenses = useAppStore((s) => s.expenses);
+  const storeGoals = useAppStore((s) => s.goals);
+  const storeAssets = useAppStore((s) => s.assets);
+  const storeReserves = useAppStore((s) => s.reserves);
+
   useEffect(() => {
     (async () => {
       try {
@@ -59,7 +66,7 @@ export default function PlanningPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [storeIncomes, storeExpenses, storeGoals, storeAssets, storeReserves]);
 
   const projection = model?.projection;
   const timeline = useMemo(() => projection?.timeline ?? [], [projection]);

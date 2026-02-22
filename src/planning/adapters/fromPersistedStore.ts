@@ -71,7 +71,15 @@ export function buildPlanInputFromPersistedStore(): PlanInput {
               : undefined,
         }))
       : [];
-    return buildPlanInputFromRepoData({ incomes, expenses, assets, goals });
+    const reserves = Array.isArray(state.reserves)
+      ? state.reserves.map((r: any) => ({
+          ...r,
+          dueDate: parseDateField(r.dueDate),
+          createdAt: parseDateField(r.createdAt),
+          updatedAt: parseDateField(r.updatedAt),
+        }))
+      : [];
+    return buildPlanInputFromRepoData({ incomes, expenses, assets, goals, reserves });
   } catch {
     return buildPlanInputFromRepoData({ incomes: [], expenses: [], assets: [], goals: [] });
   }
