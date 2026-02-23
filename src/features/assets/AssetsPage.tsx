@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Asset } from '@shared/types';
-import { Button, Card, Modal, Table } from '@shared/components';
+import { Button, Card, Modal } from '@shared/components';
 import { AssetForm } from './AssetForm';
 import { asCentsSafe } from '@shared/utils/money';
 import { formatCents } from '@/ui/formatMoney';
@@ -79,91 +79,25 @@ export default function AssetsPage() {
   const totalGain = asCentsSafe(totalValue) - asCentsSafe(totalCostBasis);
   const totalGainPercent = totalCostBasis > 0 ? ((totalGain / totalCostBasis) * 100).toFixed(2) : '0';
 
-  const columns = [
-    { key: 'name', label: 'Name' },
-    { key: 'type', label: 'Art', render: (asset: Asset) => getAssetTypeLabel(asset.type) },
-    {
-      key: 'costBasisCents',
-      label: 'Kostenbasis (Eingezahlt)',
-      render: (asset: Asset) => <span>{formatCents(asCentsSafe(asset.costBasisCents))}</span>,
-    },
-    {
-      key: 'monthlyContributionCents',
-      label: 'Sparrate (Monat)',
-      render: (asset: Asset) =>
-        asCentsSafe(asset.monthlyContributionCents) > 0
-          ? <span>{formatCents(asCentsSafe(asset.monthlyContributionCents))}</span>
-          : <span className="text-gray-400 dark:text-gray-500">—</span>,
-    },
-    {
-      key: 'marketValueCents',
-      label: 'Marktwert',
-      render: (asset: Asset) =>
-        typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents) ? (
-          <span>
-            {formatCents(asCentsSafe(asset.marketValueCents))}
-            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(manuell gepflegt)</span>
-          </span>
-        ) : (
-          <span className="text-gray-400 dark:text-gray-500">—</span>
-        ),
-    },
-    {
-      key: 'gain',
-      label: 'Gewinn/Verlust',
-      render: (asset: Asset) => {
-        const costBasisCentsSafe = asCentsSafe(asset.costBasisCents);
-        const marketValueCentsSafe = (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents))
-          ? asCentsSafe(asset.marketValueCents)
-          : undefined;
-        let gainCents = 0;
-        let gainPercent = 0;
-        if (typeof marketValueCentsSafe === 'number') {
-          gainCents = marketValueCentsSafe - costBasisCentsSafe;
-          if (costBasisCentsSafe > 0) {
-            gainPercent = (gainCents / costBasisCentsSafe) * 100;
-          }
-        }
-        return (
-          <div className="text-sm">
-            <div className={`font-semibold ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-              {gainCents >= 0 ? '+' : ''}{formatCents(asCentsSafe(gainCents))}
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 text-xs">
-              {gainCents >= 0 ? '+' : ''}{Number.isFinite(gainPercent) ? gainPercent.toFixed(2) : '0'}%
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'purchaseDate',
-      label: 'Datum',
-      render: (asset: Asset) => asset.purchaseDate ? format(asset.purchaseDate, 'dd.MM.yyyy') : '-',
-    },
-    {
-      key: 'actions',
-      label: 'Aktionen',
-      render: (asset: Asset) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openEditModal(asset)}>
-            Bearbeiten
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDelete(asset.id)}>
-            Löschen
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const sortedAssets = useMemo(() =>
+    [...assets].sort((a, b) => {
+      const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
+      const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
+      return vb - va;
+    }),
+    [assets]
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Anlagen</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Vermögenswerten und Investitionen</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Anlagen</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verwaltung von Vermögenswerten und Investitionen</p>
         </div>
+        <Button variant="primary" onClick={openCreateModal}>
+          + Anlage
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -185,91 +119,92 @@ export default function AssetsPage() {
         </Card>
       </div>
 
-      {/* Assets */}
-      <Card
-        title={`Vermögenswerte (${assets.length})`}
-        actions={
-          <Button onClick={openCreateModal}>
-            + Neue Anlage
-          </Button>
-        }
-      >
-        {/* Desktop: Table */}
-        <div className="hidden lg:block">
-          <Table
-            data={assets.slice().sort((a, b) => {
-              const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
-              const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
-              return vb - va;
-            })}
-            columns={columns}
-            emptyMessage="Noch keine Anlagen vorhanden"
-          />
-        </div>
-        {/* Mobile: Card List */}
-        <div className="lg:hidden">
-          {assets.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Anlagen vorhanden</div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {assets.slice().sort((a, b) => {
-                const va = typeof a.marketValueCents === 'number' ? a.marketValueCents : a.costBasisCents;
-                const vb = typeof b.marketValueCents === 'number' ? b.marketValueCents : b.costBasisCents;
-                return vb - va;
-              }).map((asset) => {
-                const costBasis = asCentsSafe(asset.costBasisCents);
-                const marketValue = (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents))
-                  ? asCentsSafe(asset.marketValueCents) : undefined;
-                const gainCents = typeof marketValue === 'number' ? marketValue - costBasis : 0;
-                const gainPct = typeof marketValue === 'number' && costBasis > 0
-                  ? ((gainCents / costBasis) * 100).toFixed(1) : null;
-                const displayValue = typeof marketValue === 'number' ? marketValue : costBasis;
-
-                return (
-                  <div key={asset.id} className="py-3 px-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">{asset.name}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          <span>{getAssetTypeLabel(asset.type)}</span>
-                          {asset.purchaseDate && (
-                            <>
-                              <span>·</span>
-                              <span>{format(asset.purchaseDate, 'dd.MM.yyyy')}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {formatCents(displayValue)}
-                        </div>
-                        {gainPct !== null && (
-                          <div className={`text-xs font-medium ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-                            {gainCents >= 0 ? '+' : ''}{formatCents(gainCents)} ({gainCents >= 0 ? '+' : ''}{gainPct}%)
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Basis: {formatCents(costBasis)}</span>
-                        {asCentsSafe(asset.monthlyContributionCents) > 0 && (
-                          <span>Sparrate: {formatCents(asCentsSafe(asset.monthlyContributionCents))}/M</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => openEditModal(asset)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
-                        <button onClick={() => handleDelete(asset.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* Assets Grid */}
+      {sortedAssets.length === 0 ? (
+        <Card>
+          <div className="text-center py-12 space-y-4">
+            <div className="text-5xl">📈</div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Anlagen</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Erfasse deine Vermögenswerte — z.B. ETFs, Aktien, Sparkonten.
+              </p>
             </div>
-          )}
+            <Button variant="primary" onClick={openCreateModal}>Erste Anlage anlegen</Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {sortedAssets.map((asset) => {
+            const costBasis = asCentsSafe(asset.costBasisCents);
+            const marketValue = (typeof asset.marketValueCents === 'number' && Number.isFinite(asset.marketValueCents))
+              ? asCentsSafe(asset.marketValueCents) : undefined;
+            const gainCents = typeof marketValue === 'number' ? marketValue - costBasis : 0;
+            const gainPct = typeof marketValue === 'number' && costBasis > 0
+              ? ((gainCents / costBasis) * 100).toFixed(1) : null;
+            const displayValue = typeof marketValue === 'number' ? marketValue : costBasis;
+
+            return (
+              <Card key={asset.id} className="flex flex-col">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{asset.name}</h3>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{getAssetTypeLabel(asset.type)}</span>
+                  </div>
+                  <div className="flex gap-1 ml-2 shrink-0">
+                    <button
+                      onClick={() => openEditModal(asset)}
+                      className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
+                      title="Bearbeiten"
+                    >✏️</button>
+                    <button
+                      onClick={() => handleDelete(asset.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                      title="Löschen"
+                    >🗑️</button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 flex-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Wert</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{formatCents(displayValue)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Kostenbasis</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatCents(costBasis)}</span>
+                  </div>
+
+                  {gainPct !== null && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Gewinn/Verlust</span>
+                      <span className={`font-semibold ${gainCents >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                        {gainCents >= 0 ? '+' : ''}{formatCents(gainCents)}
+                        <span className="text-xs ml-1">({gainCents >= 0 ? '+' : ''}{gainPct}%)</span>
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2 space-y-2">
+                    {asCentsSafe(asset.monthlyContributionCents) > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Sparrate / Monat</span>
+                        <span className="font-semibold text-primary-600 dark:text-primary-400">{formatCents(asCentsSafe(asset.monthlyContributionCents))}</span>
+                      </div>
+                    )}
+                    {asset.purchaseDate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Kaufdatum</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{format(asset.purchaseDate, 'dd.MM.yyyy')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      </Card>
+      )}
 
       {/* Modal */}
       <Modal

@@ -1,51 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Income, IncomeCategory } from '@shared/types';
-import { Button, Card, Modal, Table } from '@shared/components';
+import { Button, Card, Modal } from '@shared/components';
 import { IncomeCategoryForm } from './IncomeCategoryForm';
 import { IncomeForm } from './IncomeForm';
 import { formatCents } from '@/ui/formatMoney';
 
 export default function IncomePage() {
-    // incomeColumns: define here so it is available for Table
-    const incomeColumns = [
-      { key: 'date', label: 'Datum', render: (inc: Income) => format(inc.date, 'dd.MM.yyyy') },
-      { key: 'title', label: 'Titel' },
-      {
-        key: 'amount',
-        label: 'Betrag',
-        render: (inc: Income) => (
-          <span className="font-semibold text-success-600">
-            {formatCents(inc.amount)}
-          </span>
-        )
-      },
-      { key: 'category', label: 'Kategorie', render: (inc: Income) => getCategoryName(inc.categoryId) },
-      {
-        key: 'recurring',
-        label: 'Wiederkehrend',
-        render: (inc: Income) => (
-          <span className={`px-2 py-1 text-xs rounded-full ${inc.isRecurring ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'}`}>
-            {inc.isRecurring ? 'Ja' : 'Nein'}
-          </span>
-        )
-      },
-      {
-        key: 'actions',
-        label: 'Aktionen',
-        render: (inc: Income) => (
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => openEditIncomeModal(inc)}>
-              Bearbeiten
-            </Button>
-            <Button size="sm" variant="danger" onClick={() => handleDeleteIncome(inc.id)}>
-              Löschen
-            </Button>
-          </div>
-        )
-      }
-    ];
   const { 
     incomeCategories, 
     incomes, 
@@ -122,34 +84,30 @@ export default function IncomePage() {
     setIsIncomeModalOpen(true);
   };
 
-  // Get category name for income
   const getCategoryName = (categoryId: string) => {
     return incomeCategories.find((cat) => cat.id === categoryId)?.name || 'Unbekannt';
   };
 
-  // Table Columns
-  const categoryColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'description', label: 'Beschreibung', render: (cat: IncomeCategory) => cat.description || '-' },
-    {
-      key: 'color',
-      label: 'Farbe',
-      render: (cat: IncomeCategory) => (
-        <div className="flex items-center gap-2">
-          {cat.color && <div className="w-6 h-6 rounded" style={{ backgroundColor: cat.color }} />}
-          {cat.color || '-'}
-        </div>
-      ),
-    },
-  ];
+  const sortedIncomes = useMemo(() =>
+    [...incomes].sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [incomes]
+  );
+
+  const totalMonthlyCents = useMemo(() =>
+    incomes.filter((i) => i.isRecurring).reduce((sum, i) => sum + i.amount, 0),
+    [incomes]
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Einkommen</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Einnahmen und Kategorien</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Einkommen</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verwaltung von Einnahmen und Kategorien</p>
         </div>
+        <Button variant="primary" onClick={openCreateIncomeModal}>
+          + Einnahme
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -190,99 +148,112 @@ export default function IncomePage() {
 
       {/* Entries Tab */}
       {activeTab === 'entries' && (
-        <Card 
-          title="Einnahmen" 
-          actions={
-            <Button onClick={openCreateIncomeModal}>
-              + Neue Einnahme
-            </Button>
-          }
-        >
-          {/* Desktop: Table */}
-          <div className="hidden lg:block">
-            <Table
-              data={incomes.sort((a, b) => b.date.getTime() - a.date.getTime())}
-              columns={incomeColumns}
-              emptyMessage="Noch keine Einnahmen vorhanden"
-            />
-          </div>
-          {/* Mobile: Card List */}
-          <div className="lg:hidden">
-            {incomes.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Einnahmen vorhanden</div>
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {incomes.sort((a, b) => b.date.getTime() - a.date.getTime()).map((inc) => (
-                  <div key={inc.id} className="py-3 px-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">{inc.title}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          <span>{format(inc.date, 'dd.MM.yyyy')}</span>
-                          <span>·</span>
-                          <span>{getCategoryName(inc.categoryId)}</span>
-                          {inc.isRecurring && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-[10px] font-medium">Wiederkehrend</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-semibold text-success-600">
-                          {formatCents(inc.amount)}
-                        </div>
-                      </div>
+        <>
+          {totalMonthlyCents > 0 && (
+            <Card>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Wiederkehrende Einnahmen gesamt</span>
+                <span className="text-lg font-bold text-success-600">{formatCents(totalMonthlyCents)}</span>
+              </div>
+            </Card>
+          )}
+
+          {sortedIncomes.length === 0 ? (
+            <Card>
+              <div className="text-center py-12 space-y-4">
+                <div className="text-5xl">💰</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Einnahmen</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Erfasse deine Einnahmen — z.B. Gehalt, Nebeneinkünfte, Mieteinnahmen.
+                  </p>
+                </div>
+                <Button variant="primary" onClick={openCreateIncomeModal}>Erste Einnahme anlegen</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedIncomes.map((inc) => (
+                <Card key={inc.id} className="flex flex-col">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{inc.title}</h3>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={() => openEditIncomeModal(inc)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
-                      <button onClick={() => handleDeleteIncome(inc.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    <div className="flex gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => openEditIncomeModal(inc)}
+                        className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
+                        title="Bearbeiten"
+                      >✏️</button>
+                      <button
+                        onClick={() => handleDeleteIncome(inc.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                        title="Löschen"
+                      >🗑️</button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
+
+                  <div className="space-y-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Betrag</span>
+                      <span className="font-semibold text-success-600">{formatCents(inc.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Kategorie</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{getCategoryName(inc.categoryId)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Datum</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{format(inc.date, 'dd.MM.yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-gray-100 dark:border-gray-700 pt-2 mt-2">
+                      <span className="text-gray-500 dark:text-gray-400">Wiederkehrend</span>
+                      {inc.isRecurring ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200">Ja</span>
+                      ) : (
+                        <span className="font-medium text-gray-400 dark:text-gray-500">Nein</span>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Categories Tab */}
       {activeTab === 'categories' && (
-        <Card
-          title="Einnahme-Kategorien"
-          actions={
-            <Button onClick={openCreateCategoryModal}>
-              + Neue Kategorie
-            </Button>
-          }
-        >
-          {/* Desktop: Table */}
-          <div className="hidden lg:block">
-            <Table
-              data={incomeCategories}
-              columns={categoryColumns}
-              emptyMessage="Noch keine Kategorien vorhanden"
-            />
-          </div>
-          {/* Mobile: Card List */}
-          <div className="lg:hidden">
-            {incomeCategories.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Kategorien vorhanden</div>
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {incomeCategories.map((cat) => (
-                  <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+        <>
+          {incomeCategories.length === 0 ? (
+            <Card>
+              <div className="text-center py-12 space-y-4">
+                <div className="text-5xl">📂</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Kategorien</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Erstelle Kategorien für deine Einnahmen.</p>
+                </div>
+                <Button variant="primary" onClick={openCreateCategoryModal}>Erste Kategorie anlegen</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {incomeCategories.map((cat) => (
+                <Card key={cat.id} className="flex flex-col">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{cat.name}</div>
-                        {cat.description && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{cat.description}</div>}
-                      </div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{cat.name}</h3>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
+                  {cat.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{cat.description}</p>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Income Modal */}

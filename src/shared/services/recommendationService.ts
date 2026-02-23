@@ -34,9 +34,15 @@ export class RecommendationService {
     categories: ExpenseCategory[]
   ): Recommendation[] {
     const recommendations: Recommendation[] = [];
-    const threeMonthsAgo = subMonths(new Date(), 3);
+    const now = new Date();
+    const threeMonthsAgo = subMonths(now, 3);
 
-    const recentExpenses = expenses.filter((exp) => exp.date >= threeMonthsAgo);
+    const recentExpenses = expenses.filter((exp) =>
+      exp.date >= threeMonthsAgo &&
+      exp.date <= now &&
+      !(exp as any).linkedReserveId &&
+      !(exp as any).linkedGoalId
+    );
 
     if (recentExpenses.length === 0) {
       return recommendations;

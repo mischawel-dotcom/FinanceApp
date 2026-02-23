@@ -29,22 +29,19 @@ type MonthlySeries = {
   label: string;
   income: number;
   expense: number;
-  balance: number;
+  reserves: number;
+  goals: number;
+  investments: number;
+  free: number;
+  savingsRate: number;
 };
 
 export default function ReportsPage() {
-  const { incomes, expenses, incomeCategories, expenseCategories, loadData } = useAppStore();
+  const { incomes, expenses, goals, reserves, assets, incomeCategories, expenseCategories, loadData } = useAppStore();
 
   useEffect(() => {
-    if (
-      incomes.length === 0 ||
-      expenses.length === 0 ||
-      incomeCategories.length === 0 ||
-      expenseCategories.length === 0
-    ) {
-      loadData();
-    }
-  }, [incomes.length, expenses.length, incomeCategories.length, expenseCategories.length, loadData]);
+    loadData();
+  }, [loadData]);
 
   const [selectedMonthKey, setSelectedMonthKey] = useState(
     format(new Date(), 'yyyy-MM')
@@ -62,6 +59,21 @@ export default function ReportsPage() {
     }).reverse();
   }, []);
 
+  const reservesMonthlyCents = useMemo(() =>
+    reserves.reduce((sum, r) => sum + (r.monthlyContributionCents || 0), 0),
+    [reserves]
+  );
+
+  const goalsMonthlyCents = useMemo(() =>
+    goals.reduce((sum, g) => sum + ((g as any).monthlyContributionCents || 0), 0),
+    [goals]
+  );
+
+  const investmentsMonthlyCents = useMemo(() =>
+    assets.reduce((sum, a) => sum + (a.monthlyContributionCents || 0), 0),
+    [assets]
+  );
+
   const monthlySeries: MonthlySeries[] = useMemo(() => {
     return months.map((month) => {
       const monthIncomes = incomes.filter((inc) =>
@@ -72,15 +84,25 @@ export default function ReportsPage() {
       );
       const incomeTotal = monthIncomes.reduce((sum, inc) => sum + inc.amount, 0);
       const expenseTotal = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const bound = expenseTotal + reservesMonthlyCents;
+      const free = incomeTotal - bound - goalsMonthlyCents - investmentsMonthlyCents;
+      const totalCommitted = bound + goalsMonthlyCents + investmentsMonthlyCents;
+      const savingsRate = incomeTotal > 0
+        ? Math.round(((goalsMonthlyCents + investmentsMonthlyCents + reservesMonthlyCents) / incomeTotal) * 100)
+        : 0;
       return {
         key: month.key,
         label: month.label,
         income: incomeTotal,
         expense: expenseTotal,
-        balance: incomeTotal - expenseTotal,
+        reserves: reservesMonthlyCents,
+        goals: goalsMonthlyCents,
+        investments: investmentsMonthlyCents,
+        free,
+        savingsRate,
       };
     });
-  }, [months, incomes, expenses]);
+  }, [months, incomes, expenses, reservesMonthlyCents, goalsMonthlyCents, investmentsMonthlyCents]);
 
   const selectedMonth = useMemo(() => {
     return months.find((m) => m.key === selectedMonthKey) ?? months[months.length - 1];
@@ -140,12 +162,16 @@ export default function ReportsPage() {
   const selectedMonthTotals = useMemo(() => {
     const incomeTotal = selectedMonthIncomes.reduce((sum, inc) => sum + inc.amount, 0);
     const expenseTotal = selectedMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const free = incomeTotal - expenseTotal - reservesMonthlyCents - goalsMonthlyCents - investmentsMonthlyCents;
     return {
       income: incomeTotal,
       expense: expenseTotal,
-      balance: incomeTotal - expenseTotal,
+      reserves: reservesMonthlyCents,
+      goals: goalsMonthlyCents,
+      investments: investmentsMonthlyCents,
+      free,
     };
-  }, [selectedMonthIncomes, selectedMonthExpenses]);
+  }, [selectedMonthIncomes, selectedMonthExpenses, reservesMonthlyCents, goalsMonthlyCents, investmentsMonthlyCents]);
 
   const exportCSV = (filename: string, rows: (string | number)[][]) => {
     const csv = rows
@@ -162,12 +188,16 @@ export default function ReportsPage() {
 
   const handleExportMonthlyReport = () => {
     const rows: (string | number)[][] = [
-      ['Monat', 'Einnahmen', 'Ausgaben', 'Saldo'],
+      ['Monat', 'Einnahmen', 'Ausgaben', 'Rücklagen', 'Ziele', 'Anlagen', 'Frei', 'Sparquote %'],
       ...monthlySeries.map((m) => [
         m.label,
         (m.income / 100).toFixed(2),
         (m.expense / 100).toFixed(2),
-        (m.balance / 100).toFixed(2),
+        (m.reserves / 100).toFixed(2),
+        (m.goals / 100).toFixed(2),
+        (m.investments / 100).toFixed(2),
+        (m.free / 100).toFixed(2),
+        m.savingsRate,
       ]),
     ];
     exportCSV('finance-report-monate.csv', rows);
@@ -220,47 +250,67 @@ export default function ReportsPage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Einnahmen (Monat)</div>
-          <div className="text-2xl font-bold text-success-600 mt-1">+{formatCents(selectedMonthTotals.income)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Einnahmen</div>
+          <div className="text-lg font-bold text-success-600 mt-1">+{formatCents(selectedMonthTotals.income)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Ausgaben (Monat)</div>
-          <div className="text-2xl font-bold text-danger-600 mt-1">-{formatCents(selectedMonthTotals.expense)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Ausgaben</div>
+          <div className="text-lg font-bold text-danger-600 mt-1">-{formatCents(selectedMonthTotals.expense)}</div>
         </Card>
         <Card>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Saldo (Monat)</div>
-          <div className={`text-2xl font-bold mt-1 ${selectedMonthTotals.balance >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-            {selectedMonthTotals.balance >= 0 ? '+' : ''}{formatCents(selectedMonthTotals.balance)}
+          <div className="text-xs text-gray-500 dark:text-gray-400">Rücklagen</div>
+          <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">-{formatCents(selectedMonthTotals.reserves)}</div>
+        </Card>
+        <Card>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Ziele</div>
+          <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">-{formatCents(selectedMonthTotals.goals)}</div>
+        </Card>
+        <Card>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Anlagen</div>
+          <div className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-1">-{formatCents(selectedMonthTotals.investments)}</div>
+        </Card>
+        <Card>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Frei</div>
+          <div className={`text-lg font-bold mt-1 ${selectedMonthTotals.free >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+            {formatCents(selectedMonthTotals.free)}
           </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Einnahmen vs. Ausgaben (6 Monate)">
+        <Card title="Einnahmen vs. Verwendung (6 Monate)">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} />
+                <YAxis fontSize={12} tickFormatter={(v: number) => `${(v / 100).toFixed(0)}`} />
                 <Tooltip formatter={(value: number) => formatCents(value)} />
                 <Legend />
-                <Bar dataKey="income" name="Einnahmen" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Ausgaben" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name="Einnahmen" fill="#10b981" />
+                <Bar dataKey="expense" name="Ausgaben" fill="#ef4444" stackId="usage" />
+                <Bar dataKey="reserves" name="Rücklagen" fill="#f59e0b" stackId="usage" />
+                <Bar dataKey="goals" name="Ziele" fill="#3b82f6" stackId="usage" />
+                <Bar dataKey="investments" name="Anlagen" fill="#8b5cf6" stackId="usage" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
-        <Card title="Saldo-Trend (6 Monate)">
+        <Card title="Frei & Sparquote (6 Monate)">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlySeries}>
                 <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip formatter={(value: number) => formatCents(value)} />
-                <Line type="monotone" dataKey="balance" name="Saldo" stroke="#3b82f6" strokeWidth={3} />
+                <YAxis yAxisId="left" fontSize={12} tickFormatter={(v: number) => `${(v / 100).toFixed(0)}`} />
+                <YAxis yAxisId="right" orientation="right" fontSize={12} tickFormatter={(v: number) => `${v}%`} />
+                <Tooltip formatter={(value: number, name: string) =>
+                  name === 'Sparquote' ? `${value}%` : formatCents(value)
+                } />
+                <Legend />
+                <Line yAxisId="left" type="monotone" dataKey="free" name="Frei" stroke="#10b981" strokeWidth={3} />
+                <Line yAxisId="right" type="monotone" dataKey="savingsRate" name="Sparquote" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </div>

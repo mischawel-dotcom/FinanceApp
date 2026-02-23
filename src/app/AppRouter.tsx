@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import AppShell from './layout/AppShell';
 
 // Pages
@@ -13,9 +14,16 @@ import ReportsPage from '@features/reports/ReportsPage';
 import SettingsPage from '@features/settings/SettingsPage';
 import ReservesPage from '@features/reserves/ReservesPage';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter basename="/FinanceApp" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ScrollToTop />
       <AppShell>
         <Routes>
           <Route path="/" element={<DashboardPage />} />

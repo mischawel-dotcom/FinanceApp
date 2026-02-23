@@ -116,28 +116,46 @@ export default function GoalsPage() {
     }
   };
 
+  const totalMonthlyCents = useMemo(() =>
+    goals.reduce((sum, g) => sum + (g.monthlyContributionCents ?? 0), 0),
+    [goals]
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Finanzielle Ziele</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Verfolge deine Sparziele und den Fortschritt</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Finanzielle Ziele</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verfolge deine Sparziele und den Fortschritt</p>
         </div>
-        <Button onClick={openCreateModal}>+ Neues Ziel</Button>
+        <Button variant="primary" onClick={openCreateModal}>+ Ziel</Button>
       </div>
+
+      {totalMonthlyCents > 0 && (
+        <Card>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Monatliche Sparraten gesamt</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">{formatCents(totalMonthlyCents)}</span>
+          </div>
+        </Card>
+      )}
 
       {sortedGoals.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">Noch keine Ziele definiert</p>
-            <Button onClick={openCreateModal}>Erstes Ziel erstellen</Button>
+          <div className="text-center py-12 space-y-4">
+            <div className="text-5xl">🎯</div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Ziele</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Definiere Sparziele — z.B. Urlaub, Notgroschen, Anschaffungen.
+              </p>
+            </div>
+            <Button variant="primary" onClick={openCreateModal}>Erstes Ziel erstellen</Button>
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sortedGoals.map((goal) => {
-
-            // Use EUR fields only, convert to cents locally if needed
             const targetEuro = goal.targetAmount ?? 0;
             const currentEuro = goal.currentAmount ?? 0;
             const targetCents = Math.round(targetEuro * 100);
@@ -150,82 +168,86 @@ export default function GoalsPage() {
             return (
               <Card key={goal.id} className="flex flex-col">
                 <div
-                  ref={(el) => {
-                    goalRefs.current[goal.id] = el;
-                  }}
+                  ref={(el) => { goalRefs.current[goal.id] = el; }}
                   data-testid={`goal-row-${goal.id}`}
                   data-highlight={isHighlighted ? "true" : "false"}
                   className={`flex flex-col flex-1 goal-row${isHighlighted ? " goal-row--highlight" : ""}`}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{goal.name}</h3>
-                        {goal.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{goal.description}</p>}
-                        {(goal as any).linkedExpenseId && (() => {
-                          const linked = expenses.find((e: any) => e.id === (goal as any).linkedExpenseId);
-                          return (
-                            <p className="text-xs text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-1">
-                              <span>🔗</span>
-                              Verknüpft mit Ausgabe{linked ? `: ${linked.title}` : ''}
-                            </p>
-                          );
-                        })()}
-                        {isHighlighted && (
-                          <span className="goal-row__badge" aria-label="Empfehlung">Empfehlung</span>
-                        )}
-                      </div>
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPriorityColor(goal.priority)}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{goal.name}</h3>
+                      {goal.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{goal.description}</p>}
+                      {(goal as any).linkedExpenseId && (() => {
+                        const linked = expenses.find((e: any) => e.id === (goal as any).linkedExpenseId);
+                        return (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 truncate">
+                            Verknüpft: {linked ? linked.title : 'Ausgabe'}
+                          </p>
+                        );
+                      })()}
+                      {isHighlighted && (
+                        <span className="goal-row__badge" aria-label="Empfehlung">Empfehlung</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${getPriorityColor(goal.priority)}`}>
                         {priorityLabels[goal.priority]}
                       </span>
+                      <button
+                        onClick={() => openEditModal(goal)}
+                        className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
+                        title="Bearbeiten"
+                      >✏️</button>
+                      <button
+                        onClick={() => handleDelete(goal.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                        title="Löschen"
+                      >🗑️</button>
                     </div>
-                    <div className="space-y-3 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Zielbetrag:</span>
-                        <span className="font-semibold">{formatCents(targetCents)}</span>
+                  </div>
+
+                  <div className="space-y-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Ziel</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCents(targetCents)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Angespart</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCents(currentCents)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            progress >= 100 ? "bg-green-500" : progress >= 50 ? "bg-blue-500" : "bg-blue-400"
+                          }`}
+                          style={{ width: `${Math.min(100, progress)}%` }}
+                        />
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Aktuell:</span>
-                        <span className="font-semibold text-primary-600">{formatCents(currentCents)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Noch benötigt:</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">{formatCents(remainingCents)}</span>
-                      </div>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{progress.toFixed(0)}%</span>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2 space-y-2">
                       <div className="flex justify-between text-sm" data-testid="goal-monthly-savings-row">
-                        <span className="text-gray-600 dark:text-gray-400">Monatliche Sparrate:</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
+                        <span className="text-gray-500 dark:text-gray-400">Sparrate / Monat</span>
+                        <span className="font-semibold text-primary-600 dark:text-primary-400">
                           {goal.monthlyContributionCents && goal.monthlyContributionCents > 0
                             ? formatCents(goal.monthlyContributionCents)
                             : "—"}
                         </span>
                       </div>
-                    </div>
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        <span>Fortschritt</span>
-                        <span className="font-semibold">{progress.toFixed(1)}%</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Noch benötigt</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatCents(remainingCents)}</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            progress >= 100 ? "bg-success-600" : progress >= 75 ? "bg-primary-600" : "bg-primary-400"
-                          }`}
-                          style={{ width: `${Math.min(100, progress)}%` }}
-                        />
-                      </div>
+                      {goal.targetDate && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500 dark:text-gray-400">Zieldatum</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{format(goal.targetDate, "dd.MM.yyyy")}</span>
+                        </div>
+                      )}
                     </div>
-                    {goal.targetDate && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">🗓️ Zieldatum: {format(goal.targetDate, "dd.MM.yyyy")}</div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <Button size="sm" variant="secondary" onClick={() => openEditModal(goal)} className="flex-1">
-                      Bearbeiten
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleDelete(goal.id)} className="flex-1">
-                      Löschen
-                    </Button>
                   </div>
                 </div>
               </Card>

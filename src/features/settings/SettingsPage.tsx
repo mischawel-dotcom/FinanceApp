@@ -220,6 +220,13 @@ export default function SettingsPage() {
       <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
         <p>Deine Daten werden lokal auf diesem Gerät gespeichert. Erstelle regelmäßig Sicherungen, damit du sie bei Bedarf wiederherstellen kannst – auch auf einem anderen Gerät.</p>
       </div>
+
+      {/* Version */}
+      <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+        <span className="text-xs text-gray-400 dark:text-gray-500">
+          FinanceApp v{__APP_VERSION__}
+        </span>
+      </div>
     </div>
   );
 }

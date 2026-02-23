@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useAppStore } from '@/app/store/useAppStore';
 import type { Expense, ExpenseCategory, RecurrenceInterval } from '@shared/types';
-import { Button, Card, Modal, Table } from '@shared/components';
+import { Button, Card, Modal } from '@shared/components';
 import { formatCents } from '@/ui/formatMoney';
 import { ExpenseCategoryForm } from './ExpenseCategoryForm';
 import { ExpenseForm } from './ExpenseForm';
@@ -213,117 +213,41 @@ export default function ExpensesPage() {
     return colors[importance] || colors[3];
   };
 
-  // Table Columns
-  const categoryColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'description', label: 'Beschreibung', render: (cat: ExpenseCategory) => cat.description || '-' },
-    {
-      key: 'color',
-      label: 'Farbe',
-      render: (cat: ExpenseCategory) => (
-        <div className="flex items-center gap-2">
-          {cat.color && <div className="w-6 h-6 rounded" style={{ backgroundColor: cat.color }} />}
-          {cat.color || '-'}
-        </div>
-      ),
-    },
-    {
-      key: 'importance',
-      label: 'Wichtigkeit',
-      render: (cat: ExpenseCategory) => (
-        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
-          {cat.importance}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Aktionen',
-      render: (cat: ExpenseCategory) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openEditCategoryModal(cat)}>
-            Bearbeiten
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteCategory(cat.id)}>
-            Löschen
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const sortedExpenses = useMemo(() =>
+    [...expenses].sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [expenses]
+  );
 
-  const expenseColumns = [
-    { key: 'date', label: 'Datum', render: (exp: Expense) => format(exp.date, 'dd.MM.yyyy') },
-    {
-      key: 'title',
-      label: 'Titel',
-      render: (exp: Expense) => (
-        <span className="flex items-center gap-1.5">
-          {exp.title}
-          {(exp as any).linkedGoalId && (
-            <span title={`Verknüpft mit Ziel: ${goals.find((g) => g.id === (exp as any).linkedGoalId)?.name ?? ''}`}
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
-              Sparziel
-            </span>
-          )}
-          {(exp as any).linkedReserveId && (
-            <span title={`Verknüpft mit Rücklage: ${reserves.find((r) => r.id === (exp as any).linkedReserveId)?.name ?? ''}`}
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-              Rücklage
-            </span>
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'amount',
-      label: 'Betrag',
-      render: (exp: Expense) => (
-        <span className="font-semibold text-danger-600">
-          {formatCents(exp.amount)}
-        </span>
-      )
-    },
-    { key: 'category', label: 'Kategorie', render: (exp: Expense) => getCategoryName(exp.categoryId) },
-    {
-      key: 'recurring',
-      label: 'Wiederkehrend',
-      render: (exp: Expense) => (
-        exp.isRecurring ? <span className="px-2 py-1 text-xs rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Ja</span> : <span className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">Nein</span>
-      )
-    },
-    { 
-      key: 'importance', 
-      label: 'Wichtigkeit', 
-      render: (exp: Expense) => (
-        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getImportanceBadge(exp.importance)}`}>
-          {exp.importance}
-        </span>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Aktionen',
-      render: (exp: Expense) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => openEditExpenseModal(exp)}>
-            Bearbeiten
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(exp.id)}>
-            Löschen
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const sortedCategories = useMemo(() =>
+    [...expenseCategories].sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0)),
+    [expenseCategories]
+  );
+
+  const totalMonthlyCents = useMemo(() =>
+    expenses.filter((e) => e.isRecurring && (!e.recurrenceInterval || e.recurrenceInterval === 'monthly'))
+      .reduce((sum, e) => sum + e.amount, 0),
+    [expenses]
+  );
+
+  const getRecurrenceLabel = (exp: Expense) => {
+    if (!exp.isRecurring) return null;
+    switch (exp.recurrenceInterval) {
+      case 'quarterly': return 'Vierteljährlich';
+      case 'yearly': return 'Jährlich';
+      default: return 'Monatlich';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ausgaben</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Verwaltung von Ausgaben und Kategorien mit Wichtigkeitsskala</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Ausgaben</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verwaltung von Ausgaben und Kategorien</p>
         </div>
+        <Button variant="primary" onClick={openCreateExpenseModal}>
+          + Ausgabe
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -394,117 +318,151 @@ export default function ExpensesPage() {
 
       {/* Entries Tab */}
       {activeTab === 'entries' && (
-        <Card 
-          title="Ausgaben" 
-          actions={
-            <Button onClick={openCreateExpenseModal}>
-              + Neue Ausgabe
-            </Button>
-          }
-        >
-          {/* Desktop: Table */}
-          <div className="hidden lg:block">
-            <Table
-              data={expenses.sort((a, b) => b.date.getTime() - a.date.getTime())}
-              columns={expenseColumns}
-              emptyMessage="Noch keine Ausgaben vorhanden"
-            />
-          </div>
-          {/* Mobile: Card List */}
-          <div className="lg:hidden">
-            {expenses.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Ausgaben vorhanden</div>
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {expenses.sort((a, b) => b.date.getTime() - a.date.getTime()).map((exp) => (
-                  <div key={exp.id} className="py-3 px-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">{exp.title}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-                          <span>{format(exp.date, 'dd.MM.yyyy')}</span>
-                          <span>·</span>
-                          <span>{getCategoryName(exp.categoryId)}</span>
-                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(exp.importance)}`}>
-                            W{exp.importance}
+        <>
+          {totalMonthlyCents > 0 && (
+            <Card>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Monatliche Fixkosten gesamt</span>
+                <span className="text-lg font-bold text-danger-600">{formatCents(totalMonthlyCents)}</span>
+              </div>
+            </Card>
+          )}
+
+          {sortedExpenses.length === 0 ? (
+            <Card>
+              <div className="text-center py-12 space-y-4">
+                <div className="text-5xl">📋</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Ausgaben</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Erfasse deine Ausgaben — z.B. Miete, Versicherungen, Abonnements.
+                  </p>
+                </div>
+                <Button variant="primary" onClick={openCreateExpenseModal}>Erste Ausgabe anlegen</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedExpenses.map((exp) => (
+                <Card key={exp.id} className="flex flex-col">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{exp.title}</h3>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {(exp as any).linkedGoalId && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                            Sparziel
                           </span>
-                          {exp.isRecurring && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-[10px] font-medium">Wdh.</span>
-                          )}
-                          {(exp as any).linkedGoalId && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-[10px] font-medium">Sparziel</span>
-                          )}
-                          {(exp as any).linkedReserveId && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-medium">Rücklage</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-semibold text-danger-600">
-                          {formatCents(exp.amount)}
-                        </div>
+                        )}
+                        {(exp as any).linkedReserveId && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                            Rücklage
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={() => openEditExpenseModal(exp)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
-                      <button onClick={() => handleDeleteExpense(exp.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    <div className="flex gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => openEditExpenseModal(exp)}
+                        className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
+                        title="Bearbeiten"
+                      >✏️</button>
+                      <button
+                        onClick={() => handleDeleteExpense(exp.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                        title="Löschen"
+                      >🗑️</button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
+
+                  <div className="space-y-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Betrag</span>
+                      <span className="font-semibold text-danger-600">{formatCents(exp.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Kategorie</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{getCategoryName(exp.categoryId)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Datum</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{format(exp.date, 'dd.MM.yyyy')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-sm border-t border-gray-100 dark:border-gray-700 pt-2 mt-2">
+                      <span className="text-gray-500 dark:text-gray-400">Wiederkehrend</span>
+                      {exp.isRecurring ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200">
+                          {getRecurrenceLabel(exp)}
+                        </span>
+                      ) : (
+                        <span className="font-medium text-gray-400 dark:text-gray-500">Nein</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Wichtigkeit</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(exp.importance)}`}>
+                        {exp.importance}/6
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Categories Tab */}
       {activeTab === 'categories' && (
-        <Card
-          title="Ausgaben-Kategorien"
-          actions={
-            <Button onClick={openCreateCategoryModal}>
-              + Neue Kategorie
-            </Button>
-          }
-        >
-          {/* Desktop: Table */}
-          <div className="hidden lg:block">
-            <Table
-              data={expenseCategories.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0))}
-              columns={categoryColumns}
-              emptyMessage="Noch keine Kategorien vorhanden"
-            />
-          </div>
-          {/* Mobile: Card List */}
-          <div className="lg:hidden">
-            {expenseCategories.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Noch keine Kategorien vorhanden</div>
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {expenseCategories.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0)).map((cat) => (
-                  <div key={cat.id} className="py-3 px-1 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+        <>
+          {sortedCategories.length === 0 ? (
+            <Card>
+              <div className="text-center py-12 space-y-4">
+                <div className="text-5xl">📂</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Noch keine Kategorien</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Erstelle Kategorien für deine Ausgaben.</p>
+                </div>
+                <Button variant="primary" onClick={openCreateCategoryModal}>Erste Kategorie anlegen</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedCategories.map((cat) => (
+                <Card key={cat.id} className="flex flex-col">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {cat.color && <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />}
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{cat.name}</div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {cat.description && <span className="text-xs text-gray-500 dark:text-gray-400">{cat.description}</span>}
-                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
-                            W{cat.importance ?? 3}
-                          </span>
-                        </div>
-                      </div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{cat.name}</h3>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => openEditCategoryModal(cat)} className="text-xs text-primary-600 font-medium py-1">Bearbeiten</button>
-                      <button onClick={() => handleDeleteCategory(cat.id)} className="text-xs text-danger-600 font-medium py-1">Löschen</button>
+                    <div className="flex gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => openEditCategoryModal(cat)}
+                        className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
+                        title="Bearbeiten"
+                      >✏️</button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                        title="Löschen"
+                      >🗑️</button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
+                  {cat.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{cat.description}</p>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Wichtigkeit</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getImportanceBadge(cat.importance ?? 3)}`}>
+                      {cat.importance ?? 3}/6
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Expense Modal */}
