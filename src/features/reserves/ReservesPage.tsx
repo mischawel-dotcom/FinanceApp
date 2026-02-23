@@ -213,7 +213,7 @@ export default function ReservesPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Rhythmus</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {reserve.interval === 'once' ? 'Einmalig' : reserve.interval === 'quarterly' ? 'Vierteljährlich' : reserve.interval === 'yearly' ? 'Jährlich' : reserve.interval}
+                      {reserve.interval === 'once' ? 'Einmalig' : reserve.interval === 'quarterly' ? 'Vierteljährlich' : reserve.interval === 'half-yearly' ? 'Halbjährlich' : reserve.interval === 'yearly' ? 'Jährlich' : reserve.interval}
                     </span>
                   </div>
 
@@ -301,7 +301,7 @@ export default function ReservesPage() {
                       <div className="font-medium text-gray-900 dark:text-white text-sm">{exp.title}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {exp.isRecurring
-                          ? (exp.recurrenceInterval === 'yearly' ? 'Jährlich' : exp.recurrenceInterval === 'quarterly' ? 'Vierteljährlich' : exp.recurrenceInterval)
+                          ? (exp.recurrenceInterval === 'yearly' ? 'Jährlich' : exp.recurrenceInterval === 'half-yearly' ? 'Halbjährlich' : exp.recurrenceInterval === 'quarterly' ? 'Vierteljährlich' : exp.recurrenceInterval)
                           : `Einmalig am ${format(new Date(exp.date), 'dd.MM.yyyy')}`
                         }
                       </div>

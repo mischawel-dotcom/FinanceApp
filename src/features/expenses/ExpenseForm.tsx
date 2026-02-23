@@ -152,6 +152,7 @@ export function ExpenseForm({ initialData, categories, onSubmit, onCancel }: Exp
               options={[
                 { value: 'monthly', label: 'Monatlich' },
                 { value: 'quarterly', label: 'Vierteljährlich' },
+                { value: 'half-yearly', label: 'Halbjährlich' },
                 { value: 'yearly', label: 'Jährlich' },
               ]}
             />

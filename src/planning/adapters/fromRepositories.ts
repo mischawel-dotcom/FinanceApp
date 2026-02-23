@@ -46,6 +46,7 @@ function mapRecurrenceIntervalToInterval(i?: RecurrenceInterval): Interval {
   switch (i) {
     case 'monthly': return 'monthly';
     case 'quarterly': return 'quarterly';
+    case 'half-yearly': return 'semi_yearly';
     case 'yearly': return 'yearly';
     // daily/weekly/biweekly have no domain Interval equivalent → approximate as monthly
     default: return 'monthly';

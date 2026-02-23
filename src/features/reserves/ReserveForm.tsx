@@ -13,6 +13,7 @@ interface ReserveFormProps {
 
 const intervalOptions: { value: RecurrenceInterval; label: string }[] = [
   { value: 'quarterly', label: 'Vierteljährlich' },
+  { value: 'half-yearly', label: 'Halbjährlich' },
   { value: 'yearly', label: 'Jährlich' },
 ];
 

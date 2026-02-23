@@ -54,6 +54,7 @@ function advanceIntervalDate(date: Date, interval: string): Date {
   const d = new Date(date);
   switch (interval) {
     case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+    case 'half-yearly': d.setMonth(d.getMonth() + 6); break;
     case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
     default: d.setFullYear(d.getFullYear() + 1); break;
   }
@@ -63,6 +64,7 @@ function advanceIntervalDate(date: Date, interval: string): Date {
 function intervalToMonths(interval: string): number {
   switch (interval) {
     case 'quarterly': return 3;
+    case 'half-yearly': return 6;
     case 'yearly': return 12;
     default: return 12;
   }

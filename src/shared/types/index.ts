@@ -46,7 +46,7 @@ export interface Recommendation {
 
 // Typdefinitionen für FinanceApp
 
-export type RecurrenceInterval = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'once';
+export type RecurrenceInterval = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'half-yearly' | 'yearly' | 'once';
 
 export interface IncomeCategory {
   id: string;

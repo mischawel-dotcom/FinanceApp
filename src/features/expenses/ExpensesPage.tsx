@@ -77,7 +77,7 @@ export default function ExpensesPage() {
     setIsCategoryModalOpen(true);
   };
 
-  const NON_MONTHLY_INTERVALS: RecurrenceInterval[] = ['quarterly', 'yearly'];
+  const NON_MONTHLY_INTERVALS: RecurrenceInterval[] = ['quarterly', 'half-yearly', 'yearly'];
 
   const unlinkedNonMonthlyExpenses = expenses.filter((e: any) =>
     e.isRecurring &&
@@ -114,7 +114,7 @@ export default function ExpensesPage() {
       NON_MONTHLY_INTERVALS.includes(payload.recurrenceInterval) &&
       payload.amount >= 5000
     ) {
-      const intervalMonths = payload.recurrenceInterval === 'yearly' ? 12 : 3;
+      const intervalMonths = payload.recurrenceInterval === 'yearly' ? 12 : payload.recurrenceInterval === 'half-yearly' ? 6 : 3;
       setReserveSuggestion({
         expenseId: id,
         title: (payload as any).title ?? 'Ausgabe',
@@ -233,6 +233,7 @@ export default function ExpensesPage() {
     if (!exp.isRecurring) return null;
     switch (exp.recurrenceInterval) {
       case 'quarterly': return 'Vierteljährlich';
+      case 'half-yearly': return 'Halbjährlich';
       case 'yearly': return 'Jährlich';
       default: return 'Monatlich';
     }
@@ -245,9 +246,15 @@ export default function ExpensesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Ausgaben</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verwaltung von Ausgaben und Kategorien</p>
         </div>
-        <Button variant="primary" onClick={openCreateExpenseModal}>
-          + Ausgabe
-        </Button>
+        {activeTab === 'entries' ? (
+          <Button variant="primary" onClick={openCreateExpenseModal}>
+            + Ausgabe
+          </Button>
+        ) : (
+          <Button variant="primary" onClick={openCreateCategoryModal}>
+            + Kategorie
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -302,7 +309,7 @@ export default function ExpensesPage() {
               <ul className="mt-2 space-y-1">
                 {unlinkedNonMonthlyExpenses.map((e: any) => (
                   <li key={e.id} className="text-xs text-gray-600 dark:text-gray-400">
-                    · {e.title} ({formatCents(e.amount)}, {e.recurrenceInterval === 'yearly' ? 'jährlich' : 'vierteljährlich'})
+                    · {e.title} ({formatCents(e.amount)}, {e.recurrenceInterval === 'yearly' ? 'jährlich' : e.recurrenceInterval === 'half-yearly' ? 'halbjährlich' : 'vierteljährlich'})
                   </li>
                 ))}
                 {unlinkedOnetimeExpenses.map((e: any) => (
@@ -517,7 +524,7 @@ export default function ExpensesPage() {
               <strong>{formatCents(reserveSuggestion.amountCents)}</strong>
               {reserveSuggestion.interval === 'once'
                 ? <> und ist am <strong>{format(reserveSuggestion.dueDate, 'dd.MM.yyyy')}</strong> fällig.</>
-                : <> und wird <strong>{reserveSuggestion.interval === 'yearly' ? 'jährlich' : 'vierteljährlich'}</strong> fällig.</>
+                : <> und wird <strong>{reserveSuggestion.interval === 'yearly' ? 'jährlich' : reserveSuggestion.interval === 'half-yearly' ? 'halbjährlich' : 'vierteljährlich'}</strong> fällig.</>
               }
             </p>
             <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">

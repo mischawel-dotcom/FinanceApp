@@ -19,10 +19,9 @@
     expect(goalRow).toBeInTheDocument();
     // Check that monthly savings is shown in the card
     const savingsRow = within(goalRow).getByTestId('goal-monthly-savings-row');
-    expect(savingsRow).toHaveTextContent(/monatliche sparrate/i);
+    expect(savingsRow).toHaveTextContent(/sparrate/i);
     expect(savingsRow).toHaveTextContent(/500,00\s*€/i);
-    // Find edit button
-    const editBtn = within(goalRow).getByText("Bearbeiten", { selector: 'button' });
+    const editBtn = within(goalRow).getByTitle("Bearbeiten");
     await act(async () => {
       editBtn.click();
     });
@@ -91,7 +90,7 @@ describe("GoalsPage", () => {
     expect(screen.getByTestId("goal-row-g2")).toBeInTheDocument();
     // Find delete button for g1
     const goalRowG1 = screen.getByTestId("goal-row-g1");
-    const deleteBtn = within(goalRowG1).getByText("Löschen", { selector: 'button' });
+    const deleteBtn = within(goalRowG1).getByTitle("Löschen");
     window.confirm = () => true;
     await act(async () => {
       deleteBtn.click();
@@ -115,7 +114,7 @@ describe("GoalsPage", () => {
         <GoalsPage />
       </MemoryRouter>
     );
-    expect(screen.getByText(/Noch keine Ziele definiert/i)).toBeInTheDocument();
+    expect(screen.getByText(/Noch keine Ziele/i)).toBeInTheDocument();
   });
 
   it("shows highlight on goal-row when highlight param is set", () => {

@@ -105,9 +105,15 @@ export default function IncomePage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Einkommen</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verwaltung von Einnahmen und Kategorien</p>
         </div>
-        <Button variant="primary" onClick={openCreateIncomeModal}>
-          + Einnahme
-        </Button>
+        {activeTab === 'entries' ? (
+          <Button variant="primary" onClick={openCreateIncomeModal}>
+            + Einnahme
+          </Button>
+        ) : (
+          <Button variant="primary" onClick={openCreateCategoryModal}>
+            + Kategorie
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
