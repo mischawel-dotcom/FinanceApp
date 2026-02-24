@@ -86,7 +86,6 @@ export default function ReportsPage() {
       const expenseTotal = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       const bound = expenseTotal + reservesMonthlyCents;
       const free = incomeTotal - bound - goalsMonthlyCents - investmentsMonthlyCents;
-      const totalCommitted = bound + goalsMonthlyCents + investmentsMonthlyCents;
       const savingsRate = incomeTotal > 0
         ? Math.round(((goalsMonthlyCents + investmentsMonthlyCents + reservesMonthlyCents) / incomeTotal) * 100)
         : 0;
